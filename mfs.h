@@ -91,5 +91,16 @@ struct fs_stat
 
 int fs_stat(const char *path, struct fs_stat *buf);
 
+// Specifications for volume control block
+struct VCB
+{
+	long signature; 	// VCB identifier
+	int totalBlocks; 	// blocks in volume
+	int blockSize; 		// size of blocks
+	int rootLocation; 	// location of root directory
+	int firstBlock; 	// location of the first usable block
+	int freeSpaceLocation; 	// location of the free space block
+	int totalFreeSpace; 	// number of free block
+};
 #endif
 
