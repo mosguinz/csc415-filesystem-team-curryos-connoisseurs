@@ -102,5 +102,29 @@ struct VCB
 	int freeSpaceLocation; 	// location of the free space block
 	int totalFreeSpace; 	// number of free block
 };
+
+// Specifications for directory entry
+struct DE {
+	// -2 for unused directory entry, positive non-zero value for used
+	long location;
+	char name[25];
+	int size;
+
+	// Metadata
+	int dateCreated;
+	int dataModified;
+	int dateLastAccessed;
+
+	char isDirectory; // '0' for directories '1' for non-directories
+
+};
+
+/*
+ * @brief
+ * @param
+ * @param
+ * @return
+ */
+int createDirectory(int numberOfEntries, struct DE * parent);
 #endif
 

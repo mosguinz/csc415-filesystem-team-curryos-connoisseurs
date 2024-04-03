@@ -13,7 +13,18 @@
 * This file is where you will start and initialize your system
 *
 **************************************************************/
-
+/*
+struct VCB
+{
+	long signature; 	// VCB identifier
+	int totalBlocks; 	// blocks in volume
+	int blockSize; 		// size of blocks
+	int rootLocation; 	// location of root directory
+	int firstBlock; 	// location of the first usable block
+	int freeSpaceLocation; 	// location of the free space block
+	int totalFreeSpace; 	// number of free block
+};
+*/
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -35,6 +46,7 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 
 	buffer = (struct VCB *) malloc(512);
 	LBAread ( buffer, 1, 0);
+
 	if ( buffer->signature == VCBSIGNATURE )
 		printf("Disk already formatted\n");
 	else{
@@ -42,7 +54,8 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 		volumeControlBlock = (struct VCB *) malloc(sizeof(struct VCB));
 		volumeControlBlock -> signature = VCBSIGNATURE;
 		volumeControlBlock -> totalBlocks = numberOfBlocks;
-		volumeControlBlock -> rootLocation = 1;
+		volumeControlBlock -> blockSize = blockSize;
+		volumeControlBlock -> rootLocation = createDirectory(50, NULL);
 		volumeControlBlock -> firstBlock = 2;
 		volumeControlBlock -> freeSpaceLocation = 3;
 		volumeControlBlock -> totalFreeSpace = 4;
@@ -50,6 +63,10 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 		LBAwrite ( volumeControlBlock, 1, 0 );
 		free(volumeControlBlock);
 	}
+
+	struct DE * newBuffer = malloc(512);
+	LBAread ( newBuffer, 1, 10);
+	printf("%s\n", newBuffer[1].name);
 
 	free(buffer);
 	return 0;

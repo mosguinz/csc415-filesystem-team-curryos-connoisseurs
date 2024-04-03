@@ -47,9 +47,9 @@ ADDOBJ= fsInit.o
 ARCH = $(shell uname -m)
 
 ifeq ($(ARCH), aarch64)
-	ARCHOBJ=fsLowM1.o
+	ARCHOBJ=fsLowM1.o createDirectory.o
 else
-	ARCHOBJ=fsLow.o
+	ARCHOBJ=fsLow.o createDirectory.o
 endif
 
 OBJ = $(ROOTNAME)$(HW)$(FOPTION).o $(ADDOBJ) $(ARCHOBJ)
