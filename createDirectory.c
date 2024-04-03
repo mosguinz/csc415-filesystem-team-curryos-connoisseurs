@@ -1,4 +1,3 @@
-// TODO HEADER GUARD
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -6,30 +5,34 @@
 #include "fsLow.h"
 #include "mfs.h"
 
-// TODO ERR HANDLE
-// TODO REQUESTED BLOCKS MUST REQUEST BLOCKS FROM FREE SPACE SYSTEM
-// TODO CHANGE NAMES AND CLEAN UP
-int createDirectory ( int numberOfEntries, struct DE * parent ){
-	
-	int requestedBlocks;
+#ifndef CREATE_DIRECTORY
+#define CREATE_DIRECTORY
 
+// TODO: REQUESTED BLOCKS MUST REQUEST BLOCKS FROM FREE SPACE SYSTEM
+int createDirectory ( int numberOfEntries, struct DE * parent ){
 	// Determine how many DEs we can actually fit into requested blocks
-	int space = sizeof(struct DE) * numberOfEntries;
-	int blocks = ( space + MINBLOCKSIZE - 1 ) / MINBLOCKSIZE;
-	int bytes = blocks * MINBLOCKSIZE;
-	int actualNumberOfEntries = bytes/sizeof(struct DE);
-	struct DE * buffer = malloc (bytes);
+	int bytes = sizeof(struct DE) * numberOfEntries;
+	int numberOfBlocks = (bytes + MINBLOCKSIZE - 1) / MINBLOCKSIZE;
+	int blocksInBytes = numberOfBlocks * MINBLOCKSIZE;
+	int actualNumberOfEntries = blocksInBytes/sizeof(struct DE);
+	
+	// Allocate memory for directory
+	struct DE * buffer = malloc (blocksInBytes);
+	if( buffer == NULL ){
+		printf("Error: Could not allocate memory for directory\n");
+		return -1;
+	}
 
 	// Initialize each directory entry to an unused state
-	for ( int i = 0 ; i < actualNumberOfEntries ; i ++ ){
+	for ( int i = 0 ; i < actualNumberOfEntries ; i++ ){
 		buffer[i].location = -2;
 	}
 	
 	// Request blocks from freespace system
-	requestedBlocks = 10;
+	int blocksRequested = 10;
 
 	strncpy(buffer[0].name, ".", 25);
-	buffer[0].location = requestedBlocks;
+	buffer[0].location = blocksRequested;
 	buffer[0].size = actualNumberOfEntries * sizeof(struct DE);
 	
 	// If no parent is passed, initialize root directory @UNSAFE
@@ -39,12 +42,18 @@ int createDirectory ( int numberOfEntries, struct DE * parent ){
 		buffer[1] = buffer[0];
 		strncpy(buffer[1].name, "..", 25);
 
-	}else{
+	} else {
 		printf("Creating a new directory\n");
 	}
 
 	// Write newly created directory to disk
-	LBAwrite(buffer, blocks, requestedBlocks);
+	int blocksWritten = LBAwrite(buffer, numberOfBlocks, blocksRequested);
+	if( blocksWritten = -1 ){
+		printf("Error: Could not write directory to disk\n");
+		return -1;
+	}
 
-	return requestedBlocks;
+	return blocksRequested;
 }
+
+#endif
