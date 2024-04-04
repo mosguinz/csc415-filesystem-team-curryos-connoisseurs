@@ -23,6 +23,7 @@
 #include <time.h>
 
 #include "b_io.h"
+#include "fs_control.h"
 
 #include <dirent.h>
 #define FT_REGFILE	DT_REG
@@ -90,41 +91,4 @@ struct fs_stat
 	};
 
 int fs_stat(const char *path, struct fs_stat *buf);
-
-// Specifications for volume control block
-struct VCB
-{
-	long signature; 	// VCB identifier
-	int totalBlocks; 	// blocks in volume
-	int blockSize; 		// size of blocks
-	int rootLocation; 	// location of root directory
-	int firstBlock; 	// location of the first usable block
-	int freeSpaceLocation; 	// location of the free space block
-	int totalFreeSpace; 	// number of free block
-};
-
-// Specifications for directory entry
-struct DE {
-	// -2 for unused directory entry, positive non-zero value for used
-	long location;
-	char name[25];
-	int size;
-
-	// Metadata
-	int dateCreated;
-	int dataModified;
-	int dateLastAccessed;
-
-	char isDirectory; // '0' for directories '1' for non-directories
-
-};
-
-/*
- * @brief
- * @param
- * @param
- * @return
- */
-int createDirectory(int numberOfEntries, struct DE * parent);
 #endif
-
