@@ -23,6 +23,10 @@ int createDirectory ( int numberOfEntries, struct DE * parent ){
 	
 	// Allocate memory for directory
 	struct DE * buffer = malloc (blockCount);
+	if( buffer == NULL ){
+		printf("Error: Could not allocate memory for new directory\n");
+		exit(EXIT_FAILURE);
+	}
 
 	// Initialize each directory entry in new directory to an unused state
 	for ( int i = 0 ; i < maxEntryCount ; i++ )
