@@ -9,12 +9,12 @@ struct VCB
 	int freeSpaceLocation; 	// location of the FAT table
 	int rootLocation; 	// location of root directory
 	int firstBlock; 	// location of the first usable block
-	//int totalFreeSpace; 	number of free blocks
+	int totalFreeSpace; // number of free blocks
 };
 
 // Specifications for directory entry
 struct DE {
-	/* location set to -2 for unused directory entry, 
+	/* location set to -2 for unused directory entry,
 	 * location set to positive non-zero value if in use */
 	long location;
 	char name[25];
@@ -27,7 +27,7 @@ struct DE {
 
 	char isDirectory; // '0' for directories '1' for non-directories
 };
-/* 
+/*
  * @brief
  * @param
  * @param

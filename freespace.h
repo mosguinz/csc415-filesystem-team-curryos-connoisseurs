@@ -24,7 +24,21 @@
 
 typedef int b_io_fd;
 
+/*
+ * initilize freespace table
+ *
+ * @param numberOfBlocks the number of blocks the file system has
+ * @param blockSize the size of a block
+ * @return the index of the first usable block
+ */
 int initFreespace(uint64_t numberOfBlocks, uint64_t blockSize);
+
+/*
+ * get free blocks
+ *
+ * @param numberOfBlocks the number of blocks that are needed
+ * @return the location of the first block that can be used. -1 on error
+ */
 int getFreeBlocks(uint64_t numberOfBlocks);
 
 #endif
