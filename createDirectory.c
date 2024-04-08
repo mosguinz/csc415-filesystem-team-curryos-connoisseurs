@@ -34,12 +34,13 @@ int createDirectory ( int numberOfEntries, struct DE * parent ){
 		buffer[i].location = -2;
 	
 	// Request blocks from freespace system
-	blocksRequested = 10;
+	blocksRequested = 200;
 
 	// Initialize dot and dot dot entries of the new directory
 	strncpy(buffer[0].name, ".", 25);
 	buffer[0].location = blocksRequested;
 	buffer[0].size = maxEntryCount * sizeof(struct DE);
+	buffer[0].isDirectory = '0';
 	
 	// If no parent is passed, initialize root directory @UNSAFE
 		// Cannot handle if root already exists
@@ -52,6 +53,20 @@ int createDirectory ( int numberOfEntries, struct DE * parent ){
 	 * parent and link the new directory entry back to the parent */
 	} else {
 		printf("Creating a new directory\n");
+		int parentSize = (parent[0].size) / sizeof(struct DE);
+		int directorySlots = 0;
+		int slotFound = 0;
+		for (   ; !slotFound && (slotFound < parentSize) 
+			; slotFound++ ){
+			if ( parent[directorySlots].location == - 2 ) {
+				parent[directorySlots] = buffer[0];
+				slotFound = 1;
+				LBAwrite(parent, 1, parent[0].location);
+			}	
+		}
+		if ( slotFound == 0 ) 
+			perror("Directory is full");
+		
 	}
 
 	// Write newly created directory to disk

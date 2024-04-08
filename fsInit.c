@@ -36,12 +36,14 @@ struct VCB
 #include "fs_control.h"
 #include "freespace.h"
 
-struct VCB *volumeControlBlock;
+struct VCB * volumeControlBlock;
+struct DE * root;
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 	long const VCBSIGNATURE = 8357492010847392157;
 	struct VCB * buffer;
 	volumeControlBlock = (struct VCB *) malloc(MINBLOCKSIZE);
+	root = (struct DE *) malloc(MINBLOCKSIZE);
 
 	printf ("Initializing File System with %ld blocks \
 		with a block size of %ld\n", numberOfBlocks, blockSize);
@@ -50,23 +52,22 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 	LBAread ( buffer, 1, 0);
 
 	if ( buffer->signature == VCBSIGNATURE ){
-        LBAread(volumeControlBlock, 1, 0);
+        	LBAread(volumeControlBlock, 1, 0);
 		printf("Disk already formatted\n");
-    }
-	else{
+		LBAread ( root, 1, volumeControlBlock->rootLocation );
+	}else{
 		printf("Formatting disk\n");
 		memset(volumeControlBlock, 0, MINBLOCKSIZE);
 		volumeControlBlock -> signature = VCBSIGNATURE;
 		volumeControlBlock -> totalBlocks = numberOfBlocks;
 		volumeControlBlock -> blockSize = blockSize;
-		volumeControlBlock -> firstBlock = initFreespace(numberOfBlocks, blockSize);
+		volumeControlBlock -> firstBlock = 
+			initFreespace(numberOfBlocks, blockSize);
 		volumeControlBlock -> rootLocation = createDirectory(50, NULL);
-
-		LBAwrite ( volumeControlBlock, 1, 0 );
-		// free(volumeControlBlock);
 	}
 
 	free(buffer);
+	createDirectory(50, root);
 
 	return 0;
 }
