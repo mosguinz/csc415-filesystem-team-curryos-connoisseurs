@@ -6,6 +6,7 @@
 #include "fsLow.h"
 #include "mfs.h"
 #include "fs_control.h"
+#include "freespace.h"
 
 // TODO: REQUESTED BLOCKS MUST REQUEST BLOCKS FROM FREE SPACE SYSTEM
 int createDirectory ( int numberOfEntries, struct DE * parent ){
