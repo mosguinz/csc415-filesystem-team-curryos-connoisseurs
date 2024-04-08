@@ -34,11 +34,14 @@ struct VCB
 #include "fsLow.h"
 #include "mfs.h"
 #include "fs_control.h"
+#include "freespace.h"
+
+struct VCB *volumeControlBlock;
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
-	struct VCB * volumeControlBlock;
 	long const VCBSIGNATURE = 8357492010847392157;
 	struct VCB * buffer;
+	volumeControlBlock = (struct VCB *) malloc(MINBLOCKSIZE);
 
 	printf ("Initializing File System with %ld blocks \
 		with a block size of %ld\n", numberOfBlocks, blockSize);
@@ -46,29 +49,29 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 	buffer = (struct VCB *) malloc(512);
 	LBAread ( buffer, 1, 0);
 
-	if ( buffer->signature == VCBSIGNATURE )
+	if ( buffer->signature == VCBSIGNATURE ){
+        LBAread(volumeControlBlock, 1, 0);
 		printf("Disk already formatted\n");
+    }
 	else{
 		printf("Formatting disk\n");
-		volumeControlBlock = (struct VCB *) malloc(MINBLOCKSIZE);
 		memset(volumeControlBlock, 0, MINBLOCKSIZE);
 		volumeControlBlock -> signature = VCBSIGNATURE;
 		volumeControlBlock -> totalBlocks = numberOfBlocks;
 		volumeControlBlock -> blockSize = blockSize;
-		volumeControlBlock -> freeSpaceLocation = 3;
 		volumeControlBlock -> rootLocation = createDirectory(50, NULL);
-		volumeControlBlock -> firstBlock = 2;
-		//volumeControlBlock -> totalFreeSpace = 4;
+        initFreespace(numberOfBlocks, blockSize);
+		volumeControlBlock -> firstBlock = initFreespace(numberOfBlocks, blockSize);
 
 		LBAwrite ( volumeControlBlock, 1, 0 );
-		free(volumeControlBlock);
+		// free(volumeControlBlock);
 	}
 
 	free(buffer);
 
 	return 0;
 }
-	
+
 void exitFileSystem (){
 	printf ("System exiting\n");
 }

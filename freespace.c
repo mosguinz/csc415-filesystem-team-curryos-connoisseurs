@@ -19,7 +19,7 @@ int initFreespace(uint64_t numberOfBlocks, uint64_t blockSize){
     // the number of blocks the freespace map needs
     int blocksNeeded = ( numberOfBlocks + blockSize - 1) / blockSize;
     int* freeSpaceList = malloc( blocksNeeded * blockSize );
-    for( int i = 1; i < numberOfBlocks; i ++ ) {
+    for( int i = 1; i < blocksNeeded; i++ ) {
         freeSpaceList[i] = i+1;
     }
 
@@ -31,6 +31,8 @@ int initFreespace(uint64_t numberOfBlocks, uint64_t blockSize){
     freeSpaceList[numberOfBlocks - 1] = 0xFFFFFFFF;
 
     int blocksWritten = LBAwrite(freeSpaceList, blocksNeeded, 1);
+    volumeControlBlock->totalFreeSpace = blocksWritten;
+    volumeControlBlock->freeSpaceLocation = 1;
     return blocksWritten == -1 ? -1: blocksNeeded + 1;
 }
 
@@ -42,34 +44,34 @@ int initFreespace(uint64_t numberOfBlocks, uint64_t blockSize){
  */
 int getFreeBlocks(uint64_t numberOfBlocks) {
     int* freeBlocks;
-	struct VCB * vcb;
-    if( LBAread(vcb,1, 0 ) == -1) {
+	struct VCB * volumeControlBlock;
+    if( LBAread(volumeControlBlock,1, 0 ) == -1) {
         return -1;
     }
     if( numberOfBlocks < 1 ) {
         return -1;
     }
-    if( numberOfBlocks > vcb->totalFreeSpace ) {
+    if( numberOfBlocks > volumeControlBlock->totalFreeSpace ) {
         return -1;
     }
 
     // first free block in the FAT table
     // laod in the freespace map
     int* table;
-    int blocksRead = (vcb->totalFreeSpace + vcb->blockSize - 1) / vcb->blockSize;
-    LBAread(table, blocksRead, vcb->freeSpaceLocation);
-    int head = vcb->firstBlock;
-    int currBlockLoc = vcb->firstBlock;
+    int blocksRead = (volumeControlBlock->totalFreeSpace + volumeControlBlock->blockSize - 1) / volumeControlBlock->blockSize;
+    LBAread(table, blocksRead, volumeControlBlock->freeSpaceLocation);
+    int head = volumeControlBlock->firstBlock;
+    int currBlockLoc = volumeControlBlock->firstBlock;
     int nextBlockLoc = table[currBlockLoc];
-    vcb->totalFreeSpace--;
+    volumeControlBlock->totalFreeSpace--;
     // jump through the blocks to find what the new first block will be
     for( int i = 1; i < numberOfBlocks; i ++ ) {
         currBlockLoc = nextBlockLoc;
         nextBlockLoc = table[currBlockLoc];
-        vcb->totalFreeSpace--;
+        volumeControlBlock->totalFreeSpace--;
     }
     table[currBlockLoc] = 0xFFFFFFFF;
-    vcb->firstBlock = nextBlockLoc;
+    volumeControlBlock->firstBlock = nextBlockLoc;
 
     return head;
 }

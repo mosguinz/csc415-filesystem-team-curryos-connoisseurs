@@ -8,11 +8,11 @@
 #
 # HW should be set to the assignment number (i.e. 1, 2, 3, etc.)
 #
-# FOPTION can be set to blank (nothing) or to any thing starting with an 
+# FOPTION can be set to blank (nothing) or to any thing starting with an
 # underscore (_).  This is the suffix of your file name.
 #
 # With these three options above set your filename for your homework
-# assignment will look like:  bierman_robert_HW1_main.c 
+# assignment will look like:  bierman_robert_HW1_main.c
 #
 # RUNOPTIONS can be set to default values you want passed into the program
 # this can also be overridden on the command line
@@ -41,21 +41,21 @@ RUNOPTIONS=SampleVolume 10000000 512
 CC=gcc
 CFLAGS= -g -I.
 LIBS =pthread
-DEPS = 
+DEPS =
 # Add any additional objects to this list
-ADDOBJ= fsInit.o
+ADDOBJ= fsInit.o freespace.o # createDirectory.o
 ARCH = $(shell uname -m)
 
 ifeq ($(ARCH), aarch64)
-	ARCHOBJ=fsLowM1.o createDirectory.o
+	ARCHOBJ=fsLowM1.o
 else
-	ARCHOBJ=fsLow.o createDirectory.o
+	ARCHOBJ=fsLow.o
 endif
 
 OBJ = $(ROOTNAME)$(HW)$(FOPTION).o $(ADDOBJ) $(ARCHOBJ)
 
 %.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS) 
+	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(ROOTNAME)$(HW)$(FOPTION): $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) -lm -l readline -l $(LIBS)
