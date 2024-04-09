@@ -59,6 +59,6 @@ int fileWrite(void* buff, int numberOfBlocks, int location);
  * @param location the location where the blocks are read from
  * @return the number of blocks read
  */
-int fileWrite(void* buff, int numberOfBlocks, int location);
+int fileRead(void* buff, int numberOfBlocks, int location);
 #endif
 
