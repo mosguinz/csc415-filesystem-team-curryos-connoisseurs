@@ -37,28 +37,31 @@ struct VCB
 #include "freespace.h"
 
 struct VCB * volumeControlBlock;
-struct DE * root;
 int * fat;
+struct DE * root;
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
-	long const VCBSIGNATURE = 8357492010847392157;
-	struct VCB * buffer;
+	long const 		VCBSIGNATURE = 8357492010847392157;
+	struct VCB * 		buffer;
+	int 			freeSpaceBlocks;
+
+	freeSpaceBlocks =
+		((numberOfBlocks + MINBLOCKSIZE - 1) / MINBLOCKSIZE );
+	fat = (int * ) malloc(sizeof(int) * numberOfBlocks * MINBLOCKSIZE);
 	volumeControlBlock = (struct VCB *) malloc(MINBLOCKSIZE);
 	root = (struct DE *) malloc(MINBLOCKSIZE);
-	int freeSpaceBlocks = ((numberOfBlocks + MINBLOCKSIZE - 1) / MINBLOCKSIZE );
-	fat = (int * ) malloc(sizeof(int) * numberOfBlocks * MINBLOCKSIZE);
 
 
 	printf ("Initializing File System with %ld blocks \
 		with a block size of %ld\n", numberOfBlocks, blockSize);
 
-	buffer = (struct VCB *) malloc(512);
+	buffer = (struct VCB *) malloc(MINBLOCKSIZE);
 	LBAread ( buffer, 1, 0);
 
 	if ( buffer->signature == VCBSIGNATURE ){
         	LBAread(volumeControlBlock, 1, 0);
 		printf("Disk already formatted\n");
-		LBAread ( root, 1, volumeControlBlock->rootLocation );
+		//LBAread ( root, 1, volumeControlBlock->rootLocation );
 	}else{
 		printf("Formatting disk\n");
 		memset(volumeControlBlock, 0, MINBLOCKSIZE);
@@ -69,7 +72,7 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 			initFreespace(numberOfBlocks, MINBLOCKSIZE);
 		printf("Free space initialized\n");
 		volumeControlBlock -> freeSpaceLocation = 1;
-		volumeControlBlock -> rootLocation =
+		volumeControlBlock -> rootLocation = 
 			createDirectory(50, NULL, "/");
 		LBAwrite(volumeControlBlock, 1, 0);
 	}

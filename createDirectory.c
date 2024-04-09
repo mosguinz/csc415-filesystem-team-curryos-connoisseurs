@@ -8,7 +8,6 @@
 #include "fs_control.h"
 #include "freespace.h"
 
-// TODO: REQUESTED BLOCKS MUST REQUEST BLOCKS FROM FREE SPACE SYSTEM
 int createDirectory ( int numberOfEntries, struct DE * parent, char * name ){
 	int bytes;		// The number of bytes needed for entries
 	int blockCount;		// The total number of blocks needed
@@ -19,11 +18,11 @@ int createDirectory ( int numberOfEntries, struct DE * parent, char * name ){
 	 * entries we can actually fit */
 	bytes = sizeof(struct DE) * numberOfEntries;
 	blockCount = 
-		((bytes + MINBLOCKSIZE - 1) / MINBLOCKSIZE) * MINBLOCKSIZE;
-	maxEntryCount = blockCount/sizeof(struct DE);
+		((bytes + MINBLOCKSIZE - 1) / MINBLOCKSIZE);
+	maxEntryCount = (blockCount * MINBLOCKSIZE) / sizeof(struct DE);
 	
 	// Allocate memory for directory
-	struct DE * buffer = malloc (blockCount);
+	struct DE * buffer = malloc (blockCount * MINBLOCKSIZE);
 	if( buffer == NULL ){
 		printf("Error: Could not allocate memory for new directory\n");
 		exit(EXIT_FAILURE);
@@ -35,7 +34,6 @@ int createDirectory ( int numberOfEntries, struct DE * parent, char * name ){
 	
 	// Request blocks from freespace system
 	blocksRequested = getFreeBlocks(blockCount);
-	printf("Location: %d\n", blocksRequested);
 
 	// Initialize dot and dot dot entries of the new directory
 	strncpy(buffer[0].name, ".", 25);
@@ -63,16 +61,15 @@ int createDirectory ( int numberOfEntries, struct DE * parent, char * name ){
 				parent[directorySlots] = buffer[0];
 				strncpy(parent[directorySlots].name, name, 25);
 				slotFound = 1;
-				LBAwrite(parent, parent[0].size/MINBLOCKSIZE, 
+				fileWrite(parent, parent[0].size/MINBLOCKSIZE, 
 					parent[0].location);
 			}	
 		}
 		if ( slotFound == 0 ) 
 			perror("Directory is full");
-		
 	}
 
 	// Write newly created directory to disk
-	int blocksWritten = LBAwrite(buffer, blockCount, blocksRequested);
+	int blocksWritten = fileWrite(buffer, blockCount, blocksRequested);
 	return blocksRequested;
 }
