@@ -14,24 +14,24 @@
 #include "freespace.h"
 #include "fs_control.h"
 #include "fsUtils.h"
-#define BYTESIZE 8
+#define BYTESIZE 4
 int initFreespace(uint64_t numberOfBlocks, uint64_t blockSize){
     // rounding for blocks: (n + m - 1 )/ m
     // the number of blocks the freespace map needs
     int blocksNeeded = NMOverM(sizeof(int)*numberOfBlocks, blockSize);
-    int* freeSpaceList = malloc( blocksNeeded * blockSize );
+    int* fat = malloc( blocksNeeded * blockSize );
     for( int i = 1; i < numberOfBlocks; i++ ) {
-        freeSpaceList[i] = i+1;
+        fat[i] = i+1;
     }
     printf("\nblocks needed: %i\n", blocksNeeded);
 
     // mark the VCB as used
-    freeSpaceList[0] = 0xFFFFFFFF;
+    fat[0] = 0xFFFFFFFF;
     // mark the freespace map as used
-    freeSpaceList[blocksNeeded] = 0xFFFFFFFF;
-    freeSpaceList[numberOfBlocks] = 0xFFFFFFFF;
+    fat[blocksNeeded] = 0xFFFFFFFF;
+    fat[numberOfBlocks] = 0xFFFFFFFF;
 
-    int blocksWritten = LBAwrite(freeSpaceList, blocksNeeded, 1);
+    int blocksWritten = LBAwrite(fat, blocksNeeded, 1);
     volumeControlBlock->totalFreeSpace = blocksWritten;
     volumeControlBlock->freeSpaceLocation = 1;
     return blocksWritten == -1 ? -1: blocksNeeded + 1;
@@ -45,10 +45,6 @@ int initFreespace(uint64_t numberOfBlocks, uint64_t blockSize){
  */
 int getFreeBlocks(uint64_t numberOfBlocks) {
     int* freeBlocks;
-	struct VCB * volumeControlBlock;
-    if( LBAread(volumeControlBlock,1, 0 ) == -1) {
-        return -1;
-    }
     if( numberOfBlocks < 1 ) {
         return -1;
     }
@@ -57,21 +53,17 @@ int getFreeBlocks(uint64_t numberOfBlocks) {
     }
 
     // first free block in the FAT table
-    // laod in the freespace map
-    int* table;
-    int blocksRead = (volumeControlBlock->totalFreeSpace + volumeControlBlock->blockSize - 1) / volumeControlBlock->blockSize;
-    LBAread(table, blocksRead, volumeControlBlock->freeSpaceLocation);
     int head = volumeControlBlock->firstBlock;
     int currBlockLoc = volumeControlBlock->firstBlock;
-    int nextBlockLoc = table[currBlockLoc];
+    int nextBlockLoc = fat[currBlockLoc];
     volumeControlBlock->totalFreeSpace--;
     // jump through the blocks to find what the new first block will be
     for( int i = 1; i < numberOfBlocks; i ++ ) {
         currBlockLoc = nextBlockLoc;
-        nextBlockLoc = table[currBlockLoc];
+        nextBlockLoc = fat[currBlockLoc];
         volumeControlBlock->totalFreeSpace--;
     }
-    table[currBlockLoc] = 0xFFFFFFFF;
+    fat[currBlockLoc] = 0xFFFFFFFF;
     volumeControlBlock->firstBlock = nextBlockLoc;
 
     return head;
