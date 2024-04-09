@@ -45,6 +45,8 @@ int createDirectory ( int numberOfEntries, struct DE * parent, char * name ){
 		// Cannot handle if root already exists
 	if ( parent == NULL ){
 		printf("Initializing root directory\n");
+		volumeControlBlock -> rootSize = blockCount;
+		volumeControlBlock -> rootLocation = blocksRequested;
 		buffer[1] = buffer[0];
 		strncpy(buffer[1].name, "..", 20);
 
