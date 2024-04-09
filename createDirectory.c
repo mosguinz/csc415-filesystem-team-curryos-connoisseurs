@@ -9,7 +9,7 @@
 #include "freespace.h"
 
 // TODO: REQUESTED BLOCKS MUST REQUEST BLOCKS FROM FREE SPACE SYSTEM
-int createDirectory ( int numberOfEntries, struct DE * parent ){
+int createDirectory ( int numberOfEntries, struct DE * parent, char * name ){
 	int bytes;		// The number of bytes needed for entries
 	int blockCount;		// The total number of blocks needed
 	int maxEntryCount;	// How many entries we can fit into our blocks
@@ -34,7 +34,8 @@ int createDirectory ( int numberOfEntries, struct DE * parent ){
 		buffer[i].location = -2;
 	
 	// Request blocks from freespace system
-	blocksRequested = 200;
+	blocksRequested = getFreeBlocks(blockCount);
+	printf("Location: %d\n", blocksRequested);
 
 	// Initialize dot and dot dot entries of the new directory
 	strncpy(buffer[0].name, ".", 25);
@@ -57,11 +58,13 @@ int createDirectory ( int numberOfEntries, struct DE * parent ){
 		int directorySlots = 0;
 		int slotFound = 0;
 		for (   ; !slotFound && (slotFound < parentSize) 
-			; slotFound++ ){
+			; directorySlots++){
 			if ( parent[directorySlots].location == - 2 ) {
 				parent[directorySlots] = buffer[0];
+				strncpy(parent[directorySlots].name, name, 25);
 				slotFound = 1;
-				LBAwrite(parent, 1, parent[0].location);
+				LBAwrite(parent, parent[0].size/MINBLOCKSIZE, 
+					parent[0].location);
 			}	
 		}
 		if ( slotFound == 0 ) 

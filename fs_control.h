@@ -35,5 +35,6 @@ struct DE {
  */
 extern struct VCB * volumeControlBlock;
 extern struct DE * root;
-int createDirectory ( int numberOfEntries, struct DE * parent );
+extern int * FAT;
+int createDirectory ( int numberOfEntries, struct DE * parent, char * name );
 #endif

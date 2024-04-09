@@ -38,12 +38,16 @@ struct VCB
 
 struct VCB * volumeControlBlock;
 struct DE * root;
+int * FAT;
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 	long const VCBSIGNATURE = 8357492010847392157;
 	struct VCB * buffer;
 	volumeControlBlock = (struct VCB *) malloc(MINBLOCKSIZE);
 	root = (struct DE *) malloc(MINBLOCKSIZE);
+	FAT = (int * ) malloc( ( (numberOfBlocks + MINBLOCKSIZE - 1) / MINBLOCKSIZE )
+		* blockSize );
+	
 
 	printf ("Initializing File System with %ld blocks \
 		with a block size of %ld\n", numberOfBlocks, blockSize);
@@ -61,10 +65,13 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 		volumeControlBlock -> signature = VCBSIGNATURE;
 		volumeControlBlock -> totalBlocks = numberOfBlocks;
 		volumeControlBlock -> blockSize = blockSize;
+		printf("Initializing free space\n");
 		volumeControlBlock -> firstBlock =
 			initFreespace(numberOfBlocks, blockSize);
-		volumeControlBlock -> rootLocation = createDirectory(50, NULL);
-        LBAwrite(volumeControlBlock, 1, 0);
+		volumeControlBlock -> freeSpaceLocation = 1;
+		volumeControlBlock -> rootLocation = 
+			createDirectory(50, NULL, "/");
+		LBAwrite(volumeControlBlock, 1, 0);
 	}
 
 	free(buffer);

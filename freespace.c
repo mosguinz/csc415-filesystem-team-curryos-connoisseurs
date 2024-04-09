@@ -16,7 +16,6 @@
 #include "fsUtils.h"
 #define BYTESIZE 8
 int initFreespace(uint64_t numberOfBlocks, uint64_t blockSize){
-    perror("\nwtf");
     // rounding for blocks: (n + m - 1 )/ m
     // the number of blocks the freespace map needs
     int blocksNeeded = NMOverM(sizeof(int)*numberOfBlocks, blockSize);
