@@ -89,7 +89,7 @@ int fileWrite(void* buff, int numberOfBlocks, int location){
     int blockSize = volumeControlBlock->blockSize;
     int blocksWritten = 0;
     for( int i = 0; location != 0xFFFFFFFF && i < numberOfBlocks; i++ ) {
-        if( LBAwrite(buff + blockSize * i; 1, location) == -1 ) {
+        if( LBAwrite(buff + blockSize * i, 1, location) == -1 ) {
             return -1;
         }
         location = fat[location];
@@ -107,4 +107,14 @@ int fileWrite(void* buff, int numberOfBlocks, int location){
  * @return the number of blocks read
  */
 int fileRead(void* buff, int numberOfBlocks, int location){
+    int blockSize = volumeControlBlock->blockSize;
+    int blocksRead = 0;
+    for( int i = 0; location != 0xFFFFFFFF && i < numberOfBlocks; i++ ) {
+        if( LBAread(buff + blockSize*i, 1, location) == -1) {
+            return -1;
+        }
+        location = fat[location];
+        blocksRead++;
+    }
+    return blocksRead;
 }
