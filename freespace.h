@@ -41,5 +41,24 @@ int initFreespace(uint64_t numberOfBlocks, uint64_t blockSize);
  */
 int getFreeBlocks(uint64_t numberOfBlocks);
 
+/*
+ * write blocks to disk
+ *
+ * @param buff the buffer that is being written
+ * @param numberOfBlocks the number of blocks being written
+ * @param location the location where the blocks are written
+ * @return the number of blocks written
+ */
+int fileWrite(void* buff, int numberOfBlocks, int location);
+
+/*
+ * read blocks from the disk
+ *
+ * @param buff the buffer that is being filled
+ * @param numberOfBlocks the number of blocks being read
+ * @param location the location where the blocks are read from
+ * @return the number of blocks read
+ */
+int fileWrite(void* buff, int numberOfBlocks, int location);
 #endif
 
