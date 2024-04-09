@@ -23,6 +23,7 @@
 #include <time.h>
 
 #include "b_io.h"
+#include "fs_control.h"
 
 #include <dirent.h>
 #define FT_REGFILE	DT_REG
@@ -90,6 +91,4 @@ struct fs_stat
 	};
 
 int fs_stat(const char *path, struct fs_stat *buf);
-
 #endif
-
