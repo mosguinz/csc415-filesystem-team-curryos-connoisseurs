@@ -36,17 +36,17 @@ int createDirectory ( int numberOfEntries, struct DE * parent, char * name ){
 	blocksRequested = getFreeBlocks(blockCount);
 
 	// Initialize dot and dot dot entries of the new directory
-	strncpy(buffer[0].name, ".", 25);
+	strncpy(buffer[0].name, ".", 20);
 	buffer[0].location = blocksRequested;
 	buffer[0].size = maxEntryCount * sizeof(struct DE);
-	buffer[0].isDirectory = '0';
+	buffer[0].isDirectory = 0;
 	
 	// If no parent is passed, initialize root directory @UNSAFE
 		// Cannot handle if root already exists
 	if ( parent == NULL ){
 		printf("Initializing root directory\n");
 		buffer[1] = buffer[0];
-		strncpy(buffer[1].name, "..", 25);
+		strncpy(buffer[1].name, "..", 20);
 
 	/* If a parent directory entry is provided, initialize new directory's 
 	 * parent and link the new directory entry back to the parent */
@@ -59,7 +59,7 @@ int createDirectory ( int numberOfEntries, struct DE * parent, char * name ){
 			; directorySlots++){
 			if ( parent[directorySlots].location == - 2 ) {
 				parent[directorySlots] = buffer[0];
-				strncpy(parent[directorySlots].name, name, 25);
+				strncpy(parent[directorySlots].name, name, 20);
 				slotFound = 1;
 				fileWrite(parent, parent[0].size/MINBLOCKSIZE, 
 					parent[0].location);
