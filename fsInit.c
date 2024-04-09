@@ -45,8 +45,8 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 	struct VCB * buffer;
 	volumeControlBlock = (struct VCB *) malloc(MINBLOCKSIZE);
 	root = (struct DE *) malloc(MINBLOCKSIZE);
-	FAT = (int * ) malloc( ( (numberOfBlocks + MINBLOCKSIZE - 1) / MINBLOCKSIZE )
-		* blockSize );
+	int freeSpaceBlocks = ((numberOfBlocks + MINBLOCKSIZE - 1) / MINBLOCKSIZE );
+	FAT = (int * ) malloc(sizeof(int) * numberOfBlocks * MINBLOCKSIZE);
 	
 
 	printf ("Initializing File System with %ld blocks \
@@ -65,9 +65,9 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 		volumeControlBlock -> signature = VCBSIGNATURE;
 		volumeControlBlock -> totalBlocks = numberOfBlocks;
 		volumeControlBlock -> blockSize = blockSize;
-		printf("Initializing free space\n");
 		volumeControlBlock -> firstBlock =
-			initFreespace(numberOfBlocks, blockSize);
+			initFreespace(numberOfBlocks, MINBLOCKSIZE);
+		printf("Free space initialized\n");
 		volumeControlBlock -> freeSpaceLocation = 1;
 		volumeControlBlock -> rootLocation = 
 			createDirectory(50, NULL, "/");
