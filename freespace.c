@@ -13,22 +13,24 @@
 **************************************************************/
 #include "freespace.h"
 #include "fs_control.h"
+#include "fsUtils.h"
 #define BYTESIZE 8
 int initFreespace(uint64_t numberOfBlocks, uint64_t blockSize){
+    perror("\nwtf");
     // rounding for blocks: (n + m - 1 )/ m
     // the number of blocks the freespace map needs
-    int blocksNeeded = ( numberOfBlocks + blockSize - 1) / blockSize;
+    int blocksNeeded = NMOverM(sizeof(int)*numberOfBlocks, blockSize);
     int* freeSpaceList = malloc( blocksNeeded * blockSize );
-    for( int i = 1; i < blocksNeeded; i++ ) {
+    for( int i = 1; i < numberOfBlocks; i++ ) {
         freeSpaceList[i] = i+1;
     }
+    printf("\nblocks needed: %i\n", blocksNeeded);
 
     // mark the VCB as used
     freeSpaceList[0] = 0xFFFFFFFF;
     // mark the freespace map as used
     freeSpaceList[blocksNeeded] = 0xFFFFFFFF;
-    // mark the end of the list
-    freeSpaceList[numberOfBlocks - 1] = 0xFFFFFFFF;
+    freeSpaceList[numberOfBlocks] = 0xFFFFFFFF;
 
     int blocksWritten = LBAwrite(freeSpaceList, blocksNeeded, 1);
     volumeControlBlock->totalFreeSpace = blocksWritten;

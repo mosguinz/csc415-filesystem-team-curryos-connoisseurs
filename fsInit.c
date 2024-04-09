@@ -61,13 +61,13 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 		volumeControlBlock -> signature = VCBSIGNATURE;
 		volumeControlBlock -> totalBlocks = numberOfBlocks;
 		volumeControlBlock -> blockSize = blockSize;
-		volumeControlBlock -> firstBlock = 
+		volumeControlBlock -> firstBlock =
 			initFreespace(numberOfBlocks, blockSize);
 		volumeControlBlock -> rootLocation = createDirectory(50, NULL);
+        LBAwrite(volumeControlBlock, 1, 0);
 	}
 
 	free(buffer);
-	createDirectory(50, root);
 
 	return 0;
 }
