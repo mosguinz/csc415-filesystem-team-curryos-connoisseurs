@@ -29,6 +29,13 @@ struct DE
 	int isDirectory; // '0' for directories '1' for non-directories
 	char name[36];
 };
+
+// Specifications for parsepath return data
+struct PPRETDATA{
+    struct DE* parent;
+    int lastElementIndex;
+    char* lastElementName;
+};
 /*
  * @brief
  * @param
@@ -37,6 +44,7 @@ struct DE
  */
 extern struct VCB *volumeControlBlock;
 extern struct DE *root;
+extern struct DE *cwd;
 extern int *fat;
 int createDirectory(int numberOfEntries, struct DE *parent, char *name);
 #endif
