@@ -7,7 +7,11 @@ int NMOverM(int n, int m){
 }
 
 /*
- * find the index of the parent
+ * find the index of the child
+ *
+ * @param searchDirectory the DE that is being searched
+ * @param the name of the DE that is being searched
+ * @return the index of the DE or -1 if not found
  */
 int findInDir(struct DE* searchDirectory, char* name){
     int size = searchDirectory->size;
@@ -27,6 +31,10 @@ int findInDir(struct DE* searchDirectory, char* name){
 
 /*
  * load a directory
+ *
+ * @param searchDirectory the parentDirectory
+ * @param index the index of the directory that is being loaded
+ * @return the loaded directory (needs to be freed)
  */
 struct DE* loadDir(struct DE* searchDirectory, int index) {
     int size = searchDirectory->size;
@@ -39,6 +47,15 @@ struct DE* loadDir(struct DE* searchDirectory, int index) {
     struct DE* directory = (struct DE*)malloc( sizeof(struct DE));
     return directories[index];
 }
+
+//return 1 if directory, 0 otherwise
+int fs_isDir(char * pathname){
+    struct PPRETDATA *ppinfo;
+    int res = parsePath(pathname, ppinfo);
+    struct DE* dir = loadDir(ppinfo->parent, ppinfo->lastElementIndex);
+    return dir->isDirectory == 0 ? 1: 0;
+}
+
 /*
  * parse the given path
  *
@@ -80,11 +97,16 @@ int parsePath(char* pathName, struct PPRETDATA *ppinfo){
         }
         struct DE* tempDir = searchDirectory;
         searchDirectory = loadDir(tempDir, index);
-        free(tempDir);
+        if( tempDir != cwd && tempDir != root ) {
+            free(tempDir);
+        }
         char* nextToken = strtok_r(NULL, "/", &savePtr);
     } while (nextToken != NULL);
     ppinfo->lastElementName = currToken;
     ppinfo->lastElementIndex = index;
     ppinfo->parent = searchDirectory;
+    if( searchDirectory != cwd && searchDirectory != root ) {
+        free(searchDirectory);
+    }
     return 0;
 }
