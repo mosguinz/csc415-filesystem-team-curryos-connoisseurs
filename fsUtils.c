@@ -75,6 +75,22 @@ int fs_isFile(char * filename){
     return returnStatement;
 }
 
+char * fs_getcwd(char *pathname, size_t size){
+    return cwd->name;
+}
+
+int fs_setcwd(char *pathname){
+    struct PPRETDATA *ppinfo;
+    int res = parsePath(pathname, ppinfo);
+    if( res == -1 ){
+            return -1;
+    }
+    struct DE* dir = loadDir(ppinfo->parent, ppinfo->lastElementIndex);
+    free(cwd);
+    cwd = dir;
+    return 0;
+}
+
 /*
  * parse the given path
  *
