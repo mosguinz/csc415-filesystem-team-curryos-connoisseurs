@@ -1,6 +1,7 @@
 #include "fsUtils.h"
 #include "freespace.h"
 #include "fs_control.h"
+#include "mfs.h"
 #include <string.h>
 int NMOverM(int n, int m){
     return (n+m-1)/m;
@@ -45,7 +46,9 @@ struct DE* loadDir(struct DE* searchDirectory, int index) {
         return NULL;
     }
     struct DE* directory = (struct DE*)malloc( sizeof(struct DE));
-    return directories[index];
+    directory = directories[index];
+    free(directories);
+    return directory;
 }
 
 //return 1 if directory, 0 otherwise
@@ -53,7 +56,23 @@ int fs_isDir(char * pathname){
     struct PPRETDATA *ppinfo;
     int res = parsePath(pathname, ppinfo);
     struct DE* dir = loadDir(ppinfo->parent, ppinfo->lastElementIndex);
-    return dir->isDirectory == 0 ? 1: 0;
+    int returnStatement = dir->isDirectory;
+    free(dir);
+    if( returnStatement == 1 ) {
+        return 0;
+    } else if( returnStatement == 0 ){
+        return 1;
+    }
+    return -1;
+}
+
+//return 1 if file, 0 otherwise
+int fs_isFile(char * filename){
+    int index = findInDir(cwd, filename);
+    struct DE* dir = loadDir(cwd, index);
+    int returnStatement = dir->isDirectory;
+    free(dir);
+    return returnStatement;
 }
 
 /*
