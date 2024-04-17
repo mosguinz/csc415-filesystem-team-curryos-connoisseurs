@@ -12,7 +12,7 @@ int NMOverM(int n, int m){
 int findInDir(struct DE* searchDirectory, char* name){
     int size = searchDirectory->size;
     int loc = searchDirectory->location;
-    struct DE** directories = (struct DE**)malloc( size * volumeControlBlock->blockSize);
+    struct DE** directories = (struct DE**)malloc(size);
     int res = fileRead(directories, size, loc);
     int i = 0;
     int returnVal = -1;
@@ -21,7 +21,23 @@ int findInDir(struct DE* searchDirectory, char* name){
             returnVal = i;
         }
     }
+    free(directories);
     return returnVal;
+}
+
+/*
+ * load a directory
+ */
+struct DE* loadDir(struct DE* searchDirectory, int index) {
+    int size = searchDirectory->size;
+    int loc = searchDirectory->location;
+    struct DE** directories = (struct DE**)malloc(size);
+    int res = fileRead(directories, size, loc);
+    if( res == -1 ) {
+        return NULL;
+    }
+    struct DE* directory = (struct DE*)malloc( sizeof(struct DE));
+    return directories[index];
 }
 /*
  * parse the given path
@@ -42,8 +58,8 @@ int parsePath(char* pathName, struct PPRETDATA *ppinfo){
         searchDirectory = cwd;
     }
     char* savePtr = NULL;
-    char* token = strtok_r(pathName, "/", &savePtr);
-    if( token == NULL ) {
+    char* nextToken = strtok_r(pathName, "/", &savePtr);
+    if( nextToken == NULL ) {
         if(pathName[0] == '/') {
             ppinfo->parent = searchDirectory;
             ppinfo->lastElementIndex = -2;
@@ -54,6 +70,21 @@ int parsePath(char* pathName, struct PPRETDATA *ppinfo){
             return -1;
         }
     }
-    int index = findInDir(searchDirectory, token);
+    char* currToken;
+    int index;
+    do {
+        currToken = nextToken;
+        index = findInDir(searchDirectory, nextToken);
+        if( index == -1 ) {
+            return -1;
+        }
+        struct DE* tempDir = searchDirectory;
+        searchDirectory = loadDir(tempDir, index);
+        free(tempDir);
+        char* nextToken = strtok_r(NULL, "/", &savePtr);
+    } while (nextToken != NULL);
+    ppinfo->lastElementName = currToken;
+    ppinfo->lastElementIndex = index;
+    ppinfo->parent = searchDirectory;
     return 0;
 }
