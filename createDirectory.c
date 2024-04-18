@@ -8,7 +8,7 @@
 #include "fs_control.h"
 #include "freespace.h"
 
-int createDirectory(int numberOfEntries, struct DE *parent, char *name)
+int createDirectory(int numberOfEntries, struct DE *parent)
 {
 	int bytes;			 // The number of bytes needed for entries
 	int blockCount;		 // The total number of blocks needed
@@ -38,7 +38,6 @@ int createDirectory(int numberOfEntries, struct DE *parent, char *name)
 	blocksRequested = getFreeBlocks(blockCount);
 
 	// Initialize dot and dot dot entries of the new directory
-	strncpy(buffer[0].name, ".", 36);
 	buffer[0].location = blocksRequested;
 	buffer[0].size = maxEntryCount * sizeof(struct DE);
 	buffer[0].isDirectory = 0;
@@ -67,7 +66,6 @@ int createDirectory(int numberOfEntries, struct DE *parent, char *name)
 			if (parent[directorySlots].location == -2)
 			{
 				parent[directorySlots] = buffer[0];
-				strncpy(parent[directorySlots].name, name, 36);
 				slotFound = 1;
 				fileWrite(parent, parent[0].size / MINBLOCKSIZE,
 						  parent[0].location);

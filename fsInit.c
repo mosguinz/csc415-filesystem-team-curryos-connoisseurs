@@ -39,6 +39,7 @@ struct VCB
 struct VCB * volumeControlBlock;
 int * fat;
 struct DE * root;
+struct DE * cwd;
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 	long const 		VCBSIGNATURE = 8357492010847392157;
@@ -73,7 +74,7 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 		printf("Free space initialized\n");
 		volumeControlBlock -> freeSpaceLocation = 1;
 		volumeControlBlock -> rootLocation = 
-			createDirectory(50, NULL, "/");
+			createDirectory(50, NULL);
 		LBAwrite(volumeControlBlock, 1, 0);
 	}
 
