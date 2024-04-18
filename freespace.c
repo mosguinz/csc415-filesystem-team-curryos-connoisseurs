@@ -27,7 +27,7 @@ int initFreespace(uint64_t numberOfBlocks, uint64_t blockSize){
     // rounding for blocks: (n + m - 1 )/ m
     // the number of blocks the freespace map needs
     int blocksNeeded = NMOverM(sizeof(int)*numberOfBlocks, blockSize);
-    int* fat = malloc( blocksNeeded * blockSize );
+    // int* fat = malloc( blocksNeeded * blockSize );
     for( int i = 1; i < numberOfBlocks; i++ ) {
         fat[i] = i+1;
     }
@@ -40,7 +40,7 @@ int initFreespace(uint64_t numberOfBlocks, uint64_t blockSize){
     fat[numberOfBlocks] = 0xFFFFFFFF;
 
     int blocksWritten = LBAwrite(fat, blocksNeeded, 1);
-    volumeControlBlock->totalFreeSpace = blocksWritten;
+    volumeControlBlock->totalFreeSpace = numberOfBlocks - blocksNeeded;
     volumeControlBlock->freeSpaceLocation = 1;
     return blocksWritten == -1 ? -1: blocksNeeded + 1;
 }
@@ -52,7 +52,6 @@ int initFreespace(uint64_t numberOfBlocks, uint64_t blockSize){
  * @return the location of the first block that can be used. -1 on error
  */
 int getFreeBlocks(uint64_t numberOfBlocks) {
-    int* freeBlocks;
     if( numberOfBlocks < 1 ) {
         return -1;
     }
@@ -73,7 +72,6 @@ int getFreeBlocks(uint64_t numberOfBlocks) {
     }
     fat[currBlockLoc] = 0xFFFFFFFF;
     volumeControlBlock->firstBlock = nextBlockLoc;
-
     return head;
 }
 

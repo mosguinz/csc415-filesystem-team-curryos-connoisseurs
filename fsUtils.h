@@ -25,4 +25,8 @@ int parsePath(char* pathNmae, struct PPRETDATA *ppinfo);
  */
 int findInDir(struct DE* searchDirectory, char* name);
 
+/*
+ * method to help with debugging. prints VCB block
+ */
+void printVCB();
 #endif

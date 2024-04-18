@@ -92,6 +92,22 @@ int fs_setcwd(char *pathname){
 }
 
 /*
+ * method to help with debugging. prints VCB block
+ */
+void printVCB() {
+    printf ("|------------ Volume Control Block -------------|\n");
+    printf ("|------- Variable ------|-------- Value --------|\n");
+    printf ("| signature             | %-22li|\n", volumeControlBlock->signature);
+    printf ("| totalBlocks           | %-22i|\n", volumeControlBlock->totalBlocks);
+    printf ("| blockSize             | %-22i|\n", volumeControlBlock->blockSize);
+    printf ("| freeSpaceLocation     | %-22i|\n", volumeControlBlock->freeSpaceLocation);
+    printf ("| rootLocation          | %-22i|\n", volumeControlBlock->rootLocation);
+    printf ("| rootSize              | %-22i|\n", volumeControlBlock->rootSize);
+    printf ("| firstFreeBlock        | %-22i|\n", volumeControlBlock->firstBlock);
+    printf ("| totalFreeSpace        | %-22i|\n", volumeControlBlock->totalFreeSpace);
+    printf ("|-----------------------------------------------|\n");
+}
+/*
  * parse the given path
  *
  * @param pathName the path that is being parsed
