@@ -45,6 +45,7 @@ struct PPRETDATA{
 extern struct VCB *volumeControlBlock;
 extern struct DE *root;
 extern struct DE *cwd;
+extern char * cwdPathName;
 extern int *fat;
 int createDirectory(int numberOfEntries, struct DE *parent);
 #endif

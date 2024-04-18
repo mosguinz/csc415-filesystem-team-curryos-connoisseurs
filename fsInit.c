@@ -40,6 +40,7 @@ struct VCB * volumeControlBlock;
 int * fat;
 struct DE * root;
 struct DE * cwd;
+char * cwdPathName;
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 	long const 		VCBSIGNATURE = 8357492010847392157;
@@ -50,8 +51,9 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 		((numberOfBlocks + MINBLOCKSIZE - 1) / MINBLOCKSIZE );
 	fat = (int * ) malloc(sizeof(int) * numberOfBlocks * MINBLOCKSIZE);
 	volumeControlBlock = (struct VCB *) malloc(MINBLOCKSIZE);
-	root = (struct DE *) malloc(MINBLOCKSIZE);
-
+	root = (struct DE *) malloc(7 * MINBLOCKSIZE);
+	cwd = (struct DE *) malloc(7 * MINBLOCKSIZE);
+	cwdPathName = (char *) malloc(36);
 
 	printf ("Initializing File System with %ld blocks \
 		with a block size of %ld\n", numberOfBlocks, blockSize);
@@ -62,7 +64,10 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 	if ( buffer->signature == VCBSIGNATURE ){
         	LBAread(volumeControlBlock, 1, 0);
 		printf("Disk already formatted\n");
-		//LBAread ( root, 1, volumeControlBlock->rootLocation );
+		LBAread ( root, 1, volumeControlBlock->rootLocation );
+		LBAread ( fat, volumeControlBlock->totalFreeSpace,
+			volumeControlBlock->freeSpaceLocation);
+		//fs_setcwd("/");
 	}else{
 		printf("Formatting disk\n");
 		memset(volumeControlBlock, 0, MINBLOCKSIZE);
@@ -77,6 +82,10 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 			createDirectory(50, NULL);
 		LBAwrite(volumeControlBlock, 1, 0);
 	}
+	strncpy(cwdPathName, "/", 36);
+	printf("Setting CWD to %s\n", cwdPathName);
+
+	createDirectory(50, root);
 
 	free(buffer);
 
@@ -84,6 +93,10 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 }
 
 void exitFileSystem (){
+	LBAwrite(volumeControlBlock, 1, 0);
+	LBAwrite(fat, 
+		sizeof(int) * volumeControlBlock -> totalFreeSpace,
+		volumeControlBlock -> freeSpaceLocation);
 	printf ("System exiting\n");
 }
 
