@@ -13,18 +13,6 @@
 * This file is where you will start and initialize your system
 *
 **************************************************************/
-/*
-struct VCB
-{
-	long signature; 	// VCB identifier
-	int totalBlocks; 	// blocks in volume
-	int blockSize; 		// size of blocks
-	int rootLocation; 	// location of root directory
-	int firstBlock; 	// location of the first usable block
-	int freeSpaceLocation; 	// location of the free space block
-};
-*/
-
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -85,7 +73,7 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 	strncpy(cwdPathName, "/", 36);
 	printf("Setting CWD to %s\n", cwdPathName);
 
-	createDirectory(50, root);
+	createDirectory(200, root);
 
 	free(buffer);
 
@@ -93,8 +81,8 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 }
 
 void exitFileSystem (){
-	LBAwrite(volumeControlBlock, 1, 0);
-	LBAwrite(fat, 
+	fileWrite(volumeControlBlock, 1, 0);
+	fileWrite(fat, 
 		sizeof(int) * volumeControlBlock -> totalFreeSpace,
 		volumeControlBlock -> freeSpaceLocation);
 	printf ("System exiting\n");

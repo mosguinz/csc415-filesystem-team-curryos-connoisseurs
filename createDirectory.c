@@ -10,10 +10,10 @@
 
 int createDirectory(int numberOfEntries, struct DE *parent)
 {
-	int bytes;			 // The number of bytes needed for entries
-	int blockCount;		 // The total number of blocks needed
-	int maxEntryCount;	 // How many entries we can fit into our blocks
-	int blocksRequested; // Location of first block for new directory
+	int bytes;		// The number of bytes needed for entries
+	int blockCount;		// The total number of blocks needed
+	int maxEntryCount;	// How many entries we can fit into our blocks
+	int blocksRequested; 	// Location of first block for new directory
 
 	/* From # of entries argument determine the maximum number of
 	 * entries we can actually fit */
@@ -36,7 +36,7 @@ int createDirectory(int numberOfEntries, struct DE *parent)
 
 	// Request blocks from freespace system
 	blocksRequested = getFreeBlocks(blockCount);
-	printf("Creating Directory at %d, with size %d blocks\n", blocksRequested, blockCount);
+	printf("Creating Directory at %d, with size %d bytes\n", blocksRequested, maxEntryCount * sizeof(struct DE));
 
 	// Initialize dot and dot dot entries of the new directory
 	buffer[0].location = blocksRequested;
