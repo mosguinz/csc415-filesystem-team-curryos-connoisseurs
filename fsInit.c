@@ -33,10 +33,11 @@ char * cwdPathName;
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 	long const 		VCBSIGNATURE = 8357492010847392157;
 	struct VCB * 		buffer;
-	int 			freeSpaceBlocks;
+    // this variable isn't used. delete the lines if they are extra. LOVE ARJUN
+	// int 			freeSpaceBlocks;
 
-	freeSpaceBlocks =
-		((numberOfBlocks + MINBLOCKSIZE - 1) / MINBLOCKSIZE );
+	// freeSpaceBlocks =
+	// 	((numberOfBlocks + MINBLOCKSIZE - 1) / MINBLOCKSIZE );
 	fat = (int * ) malloc(sizeof(int) * numberOfBlocks * MINBLOCKSIZE);
 	volumeControlBlock = (struct VCB *) malloc(MINBLOCKSIZE);
 	root = (struct DE *) malloc(7 * MINBLOCKSIZE);
@@ -66,7 +67,7 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 			initFreespace(numberOfBlocks, MINBLOCKSIZE);
 		printf("Free space initialized\n");
 		volumeControlBlock -> freeSpaceLocation = 1;
-		volumeControlBlock -> rootLocation = 
+		volumeControlBlock -> rootLocation =
 			createDirectory(50, NULL);
 		LBAwrite(volumeControlBlock, 1, 0);
 	}
@@ -82,7 +83,7 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 
 void exitFileSystem (){
 	fileWrite(volumeControlBlock, 1, 0);
-	fileWrite(fat, 
+	fileWrite(fat,
 		sizeof(int) * volumeControlBlock -> totalFreeSpace,
 		volumeControlBlock -> freeSpaceLocation);
 	printf ("System exiting\n");
