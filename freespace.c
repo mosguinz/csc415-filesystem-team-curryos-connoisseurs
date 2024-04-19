@@ -42,6 +42,7 @@ int initFreespace(uint64_t numberOfBlocks, uint64_t blockSize){
     int blocksWritten = LBAwrite(fat, blocksNeeded, 1);
     volumeControlBlock->totalFreeSpace = numberOfBlocks - blocksNeeded;
     volumeControlBlock->freeSpaceLocation = 1;
+    volumeControlBlock->freeSpaceSize = blocksNeeded;
     return blocksWritten == -1 ? -1: blocksNeeded + 1;
 }
 

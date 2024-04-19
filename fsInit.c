@@ -21,6 +21,7 @@
 
 #include "fsLow.h"
 #include "mfs.h"
+#include "fsUtils.h"
 #include "fs_control.h"
 #include "freespace.h"
 
@@ -38,7 +39,8 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 
 	// freeSpaceBlocks =
 	// 	((numberOfBlocks + MINBLOCKSIZE - 1) / MINBLOCKSIZE );
-	fat = (int * ) malloc(sizeof(int) * numberOfBlocks * MINBLOCKSIZE);
+    int blocksNeeded = NMOverM(sizeof(int)*numberOfBlocks, blockSize);
+    fat = (int *) malloc(blocksNeeded * blockSize );
 	volumeControlBlock = (struct VCB *) malloc(MINBLOCKSIZE);
 	root = (struct DE *) malloc(7 * MINBLOCKSIZE);
 	cwd = (struct DE *) malloc(7 * MINBLOCKSIZE);
@@ -51,12 +53,12 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 	LBAread ( buffer, 1, 0);
 
 	if ( buffer->signature == VCBSIGNATURE ){
-        	LBAread(volumeControlBlock, 1, 0);
+        LBAread(volumeControlBlock, 1, 0);
 		printf("Disk already formatted\n");
-		LBAread ( root, 1, volumeControlBlock->rootLocation );
-		LBAread ( fat, volumeControlBlock->totalFreeSpace,
+		LBAread ( root, volumeControlBlock->rootSize, volumeControlBlock->rootLocation );
+		LBAread ( fat, volumeControlBlock->freeSpaceSize,
 			volumeControlBlock->freeSpaceLocation);
-		//fs_setcwd("/");
+		fs_setcwd("/");
 	}else{
 		printf("Formatting disk\n");
 		memset(volumeControlBlock, 0, MINBLOCKSIZE);
@@ -84,7 +86,7 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 void exitFileSystem (){
 	fileWrite(volumeControlBlock, 1, 0);
 	fileWrite(fat,
-		sizeof(int) * volumeControlBlock -> totalFreeSpace,
+		sizeof(int) * volumeControlBlock -> freeSpaceSize,
 		volumeControlBlock -> freeSpaceLocation);
 	printf ("System exiting\n");
 }

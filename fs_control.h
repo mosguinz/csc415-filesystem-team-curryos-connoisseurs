@@ -7,6 +7,7 @@ struct VCB
 	int totalBlocks;	   // blocks in volume
 	int blockSize;		   // size of blocks
 	int freeSpaceLocation; // location of the FAT table
+	int freeSpaceSize;     // size of the FAT table
 	int rootLocation;	   // location of root directory
 	int rootSize;		// Size of root directory in blocks
 	int firstBlock;		   // location of the first usable block

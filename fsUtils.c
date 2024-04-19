@@ -80,7 +80,7 @@ char * fs_getcwd(char *pathname, size_t size){
 }
 
 int fs_setcwd(char *pathname){
-    struct PPRETDATA *ppinfo;
+    struct PPRETDATA *ppinfo = malloc( sizeof(struct PPRETDATA));
     int res = parsePath(pathname, ppinfo);
     if( res == -1 ){
             return -1;
