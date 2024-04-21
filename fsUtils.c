@@ -3,6 +3,9 @@
 #include "fs_control.h"
 #include "mfs.h"
 #include <string.h>
+
+#define DECOUNT (7 * 512 ) / sizeof(struct DE)
+
 int NMOverM(int n, int m){
     return (n+m-1)/m;
 }
@@ -15,19 +18,13 @@ int NMOverM(int n, int m){
  * @return the index of the DE or -1 if not found
  */
 int findInDir(struct DE* searchDirectory, char* name){
-    int size = searchDirectory->size;
-    int loc = searchDirectory->location;
-    struct DE** directories = (struct DE**)malloc(size);
-    int res = fileRead(directories, size, loc);
-    int i = 0;
-    int returnVal = -1;
-    while( directories[i]->location != -1 ) {
-        if( directories[i]->name == name ) {
-            returnVal = i;
+    int res = -1;
+    for( int i = 0; i < DECOUNT; i++) {
+        if( strcmp(searchDirectory[i].name, name ) == 0) {
+            res = i;
         }
     }
-    free(directories);
-    return returnVal;
+    return res;
 }
 
 /*
@@ -38,17 +35,14 @@ int findInDir(struct DE* searchDirectory, char* name){
  * @return the loaded directory (needs to be freed)
  */
 struct DE* loadDir(struct DE* searchDirectory, int index) {
-    int size = searchDirectory->size;
-    int loc = searchDirectory->location;
-    struct DE** directories = (struct DE**)malloc(size);
+    int size = searchDirectory[0].size;
+    int loc = searchDirectory[0].location;
+    struct DE* directories = (struct DE*)malloc(size);
     int res = fileRead(directories, size, loc);
     if( res == -1 ) {
         return NULL;
     }
-    struct DE* directory = (struct DE*)malloc( sizeof(struct DE));
-    directory = directories[index];
-    free(directories);
-    return directory;
+    return directories;
 }
 
 //return 1 if directory, 0 otherwise
@@ -56,6 +50,15 @@ int fs_isDir(char * pathname){
     struct PPRETDATA *ppinfo;
     int res = parsePath(pathname, ppinfo);
     struct DE* dir = loadDir(ppinfo->parent, ppinfo->lastElementIndex);
+    int returnStatement = dir->isDirectory;
+    free(dir);
+    return returnStatement;
+}
+
+//return 1 if file, 0 otherwise
+int fs_isFile(char * filename){
+    int index = findInDir(cwd, filename);
+    struct DE* dir = loadDir(cwd, index);
     int returnStatement = dir->isDirectory;
     free(dir);
     if( returnStatement == 1 ) {
@@ -66,23 +69,27 @@ int fs_isDir(char * pathname){
     return -1;
 }
 
-//return 1 if file, 0 otherwise
-int fs_isFile(char * filename){
-    int index = findInDir(cwd, filename);
-    struct DE* dir = loadDir(cwd, index);
-    int returnStatement = dir->isDirectory;
-    free(dir);
-    return returnStatement;
-}
-
+/*
+ * gets the path of the current working directory
+ *
+ * @param pathname the buffer to fill the directory with
+ * @param size the size of the buffer
+ * @return the path of the current working directory
+ */
 char * fs_getcwd(char *pathname, size_t size){
     return cwd->name;
 }
 
+/*
+ * set the current working directory to something else
+ *
+ * @param pathname the path to the new current working directory
+ * @return int
+ */
 int fs_setcwd(char *pathname){
     struct PPRETDATA *ppinfo = malloc( sizeof(struct PPRETDATA));
     int res = parsePath(pathname, ppinfo);
-    if( res == -1 ){
+    if( res == -1 || ppinfo->lastElementIndex == -1){
             return -1;
     }
     struct DE* dir = loadDir(ppinfo->parent, ppinfo->lastElementIndex);
@@ -127,7 +134,7 @@ void printDE(struct DE* directory) {
  * @return 0 on success -1 on failure
  */
 int parsePath(char* pathName, struct PPRETDATA *ppinfo){
-    struct DE* searchDirectory;
+    struct DE* searchDirectory = malloc(7*512);
     if(pathName == NULL || ppinfo == NULL) {
         return -1;
     }
@@ -156,6 +163,9 @@ int parsePath(char* pathName, struct PPRETDATA *ppinfo){
         currToken = nextToken;
         index = findInDir(searchDirectory, nextToken);
         if( index == -1 ) {
+            if( searchDirectory != cwd && searchDirectory != root ) {
+                free(searchDirectory);
+            }
             return -1;
         }
         struct DE* tempDir = searchDirectory;
