@@ -53,12 +53,11 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 	LBAread ( buffer, 1, 0);
 
 	if ( buffer->signature == VCBSIGNATURE ){
-        LBAread(volumeControlBlock, 1, 0);
+        	LBAread(volumeControlBlock, 1, 0);
 		printf("Disk already formatted\n");
 		LBAread ( root, volumeControlBlock->rootSize, volumeControlBlock->rootLocation );
 		LBAread ( fat, volumeControlBlock->freeSpaceSize,
 			volumeControlBlock->freeSpaceLocation);
-		fs_setcwd("/");
 	}else{
 		printf("Formatting disk\n");
 		memset(volumeControlBlock, 0, MINBLOCKSIZE);
@@ -72,11 +71,15 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 		volumeControlBlock -> rootLocation =
 			createDirectory(50, NULL);
 		LBAwrite(volumeControlBlock, 1, 0);
+
+		LBAread ( root, volumeControlBlock->rootSize, volumeControlBlock->rootLocation );
 	}
+	fs_setcwd("/");
 	strncpy(cwdPathName, "/", 36);
 	printf("Setting CWD to %s\n", cwdPathName);
 
-	createDirectory(200, root);
+	//createDirectory(200, root);
+	fs_mkdir ("/home", 0);
 
 	free(buffer);
 

@@ -20,14 +20,14 @@ struct DE
 	/* location set to -2 for unused directory entry,
 	 * location set to positive non-zero value if in use */
 	long location;
-	int size;
+	int size;	// Size in bytes
 
 	// Metadata
 	int dateCreated;
 	int dataModified;
 	int dateLastAccessed;
 
-	int isDirectory; // '0' for directories '1' for non-directories
+	int isDirectory; // 1 for directories 0 for non-directories
 	char name[36];
 };
 
