@@ -20,7 +20,7 @@ struct DE
 	/* location set to -2 for unused directory entry,
 	 * location set to positive non-zero value if in use */
 	long location;
-	int size;
+	int size;	// Size in bytes
 
 	// Metadata
 	int dateCreated;

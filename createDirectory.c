@@ -24,6 +24,7 @@ int createDirectory(int numberOfEntries, struct DE *parent)
 
 	// Allocate memory for directory
 	struct DE *buffer = malloc(blockCount * MINBLOCKSIZE);
+	memset(buffer, 0, blockCount *  MINBLOCKSIZE);
 	if (buffer == NULL)
 	{
 		printf("Error: Could not allocate memory for new directory\n");
@@ -52,7 +53,6 @@ int createDirectory(int numberOfEntries, struct DE *parent)
 		volumeControlBlock->rootSize = blockCount;
 		volumeControlBlock->rootLocation = blocksRequested;
 		buffer[1] = buffer[0];
-		strncpy(buffer[1].name, "..", 36);
 
 		/* If a parent directory entry is provided, initialize new directory's
 		 * parent and link the new directory entry back to the parent */
@@ -60,7 +60,11 @@ int createDirectory(int numberOfEntries, struct DE *parent)
 	else
 	{
 		printf("Creating a new directory\n");
+		buffer[1].location = parent -> location;
+		buffer[1].size = parent -> size;
 	}
+	strncpy(buffer[1].name, "..", 36);
+	buffer[1].isDirectory = 1;
 
 	// Write newly created directory to disk
 	int blocksWritten = fileWrite(buffer, blockCount, blocksRequested);
