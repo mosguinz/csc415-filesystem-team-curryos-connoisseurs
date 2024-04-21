@@ -27,7 +27,7 @@ struct DE
 	int dataModified;
 	int dateLastAccessed;
 
-	int isDirectory; // '0' for directories '1' for non-directories
+	int isDirectory; // 1 for directories 0 for non-directories
 	char name[36];
 };
 

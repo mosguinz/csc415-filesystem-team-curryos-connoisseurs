@@ -41,7 +41,7 @@ int createDirectory(int numberOfEntries, struct DE *parent)
 	// Initialize dot and dot dot entries of the new directory
 	buffer[0].location = blocksRequested;
 	buffer[0].size = maxEntryCount * sizeof(struct DE);
-	buffer[0].isDirectory = 0;
+	buffer[0].isDirectory = 1;
 	strncpy(buffer[0].name, ".", 36);
 
 	// If no parent is passed, initialize root directory @UNSAFE
