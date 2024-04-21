@@ -107,6 +107,18 @@ void printVCB() {
     printf ("| totalFreeSpace        | %-22i|\n", volumeControlBlock->totalFreeSpace);
     printf ("|-----------------------------------------------|\n");
 }
+
+void printDE(struct DE* directory) {
+    printf ("|--------------- Directory Entry ---------------|\n");
+    printf ("|------- Variable ------|-------- Value --------|\n");
+    printf ("| name             | %-22s|\n", directory->name);
+    printf ("| size             | %-22i|\n", directory->size);
+    printf ("| location         | %-22li|\n", directory->location);
+    printf ("| is directory     | %-22i|\n", directory->isDirectory);
+    printf ("| date created     | %-22i|\n", directory->dateCreated);
+    printf ("| date modified    | %-22i|\n", directory->dataModified);
+    printf ("|-----------------------------------------------|\n");
+}
 /*
  * parse the given path
  *
