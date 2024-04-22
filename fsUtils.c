@@ -81,6 +81,43 @@ char * fs_getcwd(char *pathname, size_t size){
 }
 
 /*
+ * appends paths and cleans them
+ *
+ */
+char* cleanPath(char* pathname) {
+    char** pathTable = malloc(sizeof(char*)*strlen(pathname)/2);
+    char* savePtr = NULL;
+    char* token = strtok_r(pathname, "/", &savePtr);
+    int size = 0;
+    while( token != NULL ) {
+        pathTable[size] = strdup(token);
+        token = strtok_r(NULL, "/", &savePtr);
+        size++;
+    }
+    int* indices = malloc(sizeof(int) * size);
+    int index = 0;
+    int i = 0;
+    while( i < size ) {
+        char* token = pathTable[i];
+        if( strcmp(token, ".") == 0 );
+        else if( strcmp(token, "..") == 0 && index > 0) {
+            index--;
+        }
+        else {
+            indices[index] = i;
+            index++;
+        }
+    }
+    char* res = malloc( strlen(pathname));
+    strcpy(res, "/");
+    for( int i = 0; i < index; i++ ) {
+        strcat(res, pathTable[indices[i]]);
+        strcat(res, "/");
+    }
+    return res;
+}
+
+/*
  * set the current working directory to something else
  *
  * @param pathname the path to the new current working directory
@@ -92,9 +129,19 @@ int fs_setcwd(char *pathname){
     if( res == -1 || ppinfo->lastElementIndex == -1){
             return -1;
     }
+    if( ppinfo->parent[ppinfo->lastElementIndex].isDirectory != 1 ) {
+        return -1;
+    }
     struct DE* dir = loadDir(ppinfo->parent, ppinfo->lastElementIndex);
     free(cwd);
     cwd = dir;
+    if( pathname[0] == '/' ) {
+        cwdPathName = strdup(pathname);
+    }
+    else {
+        strcat(cwdPathName, pathname);
+    }
+    cwdPathName = cleanPath(cwdPathName);
     return 0;
 }
 
@@ -134,6 +181,7 @@ void printDE(struct DE* directory) {
  * @return 0 on success -1 on failure
  */
 int parsePath(char* pathName, struct PPRETDATA *ppinfo){
+    printf("1\n");
     struct DE* searchDirectory = malloc(7*512);
     if(pathName == NULL || ppinfo == NULL) {
         return -1;
@@ -146,6 +194,7 @@ int parsePath(char* pathName, struct PPRETDATA *ppinfo){
     }
     char* savePtr = NULL;
     char* nextToken = strtok_r(pathName, "/", &savePtr);
+    printf("2\n");
     if( nextToken == NULL ) {
         if(pathName[0] == '/') {
             ppinfo->parent = searchDirectory;
@@ -157,10 +206,12 @@ int parsePath(char* pathName, struct PPRETDATA *ppinfo){
             return -1;
         }
     }
+    printf("3\n");
     char* currToken;
     int index;
     do {
         currToken = nextToken;
+        printf("the current token is: %s\n", currToken);
         index = findInDir(searchDirectory, nextToken);
         if( index == -1 ) {
             if( searchDirectory != cwd && searchDirectory != root ) {
@@ -173,13 +224,15 @@ int parsePath(char* pathName, struct PPRETDATA *ppinfo){
         if( tempDir != cwd && tempDir != root ) {
             free(tempDir);
         }
-        char* nextToken = strtok_r(NULL, "/", &savePtr);
+        nextToken = strtok_r(NULL, "/", &savePtr);
     } while (nextToken != NULL);
+    printf("4\n");
     ppinfo->lastElementName = currToken;
     ppinfo->lastElementIndex = index;
     ppinfo->parent = searchDirectory;
     if( searchDirectory != cwd && searchDirectory != root ) {
         free(searchDirectory);
     }
+    printf("5\n");
     return 0;
 }
