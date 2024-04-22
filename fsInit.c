@@ -78,9 +78,6 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 	strncpy(cwdPathName, "/", 36);
 	printf("Setting CWD to %s\n", cwdPathName);
 
-	//createDirectory(200, root);
-	fs_mkdir ("/home", 0);
-
 	free(buffer);
 
 	return 0;

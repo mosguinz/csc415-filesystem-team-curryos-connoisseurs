@@ -11,13 +11,12 @@
 #define DEFAULTDIRSIZE 50
 
 int fs_mkdir (const char *pathname, mode_t mode){
-	int ret;
-	int readret;
-	int emptyIndex;
-	char * directoryName;
-	struct PPRETDATA *parsepathinfo;
-	struct DE * parent;
-	struct DE * newDirectory;
+	int ret;				// Used for error handling
+	int emptyIndex;				// Track first unused entry in parent
+	char * directoryName;			// Name of new directory
+	struct PPRETDATA *parsepathinfo;	// Structure returned from parse path
+	struct DE * parent;			// Track parent directory entry
+	struct DE * newDirectory;		// Used for new directory entry
 
 	parsepathinfo = malloc(sizeof(struct PPRETDATA));
 	newDirectory = malloc(MINBLOCKSIZE);
@@ -26,9 +25,7 @@ int fs_mkdir (const char *pathname, mode_t mode){
 		return -1;
 	}
 
-	//parsePath(pathname, parsepathinfo);
-	parsepathinfo->parent = root;
-	parsepathinfo->lastElementName = "Love Letter to Arjun";
+	parsePath(pathname, parsepathinfo);
 
 	// Read all relevant data from parsepath needed for directory creation
 	parent = parsepathinfo -> parent;
@@ -41,8 +38,8 @@ int fs_mkdir (const char *pathname, mode_t mode){
 		return -1;
 	}
 	memset(newDirectory, 0, MINBLOCKSIZE);
-	readret = fileRead(newDirectory, 1, ret);
-	if ( readret == -1){
+	ret = fileRead(newDirectory, 1, ret);
+	if ( ret == -1){
 		perror("File Read");
 		return -1;
 	}
@@ -56,6 +53,11 @@ int fs_mkdir (const char *pathname, mode_t mode){
 	
 	// Write changes back to parent directory to complete linking
 	fileWrite(parent, (parent->size/MINBLOCKSIZE), parent->location);
+
+	return 0;
+}
+
+int fs_rmdir ( const char * pathname ){
 
 	return 0;
 }
