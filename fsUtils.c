@@ -20,6 +20,7 @@ int NMOverM(int n, int m){
 int findInDir(struct DE* searchDirectory, char* name){
     int res = -1;
     for( int i = 0; i < DECOUNT; i++) {
+        printf("name of directory: %s\n", searchDirectory[i].name);
         if( strcmp(searchDirectory[i].name, name ) == 0) {
             res = i;
         }
@@ -127,10 +128,18 @@ int fs_setcwd(char *pathname){
     struct PPRETDATA *ppinfo = malloc( sizeof(struct PPRETDATA));
     ppinfo->parent = malloc( 7 * 512 );
     int res = parsePath(pathname, ppinfo);
+    printf("value of res: %i\n", res);
+    printf("value of lastElementIndex: %i\n", ppinfo->lastElementIndex);
+    if( ppinfo->lastElementIndex == -2 ) {
+        cwd = root;
+        return 0;
+    }
     if( res == -1 || ppinfo->lastElementIndex == -1){
-            return -1;
+        printf("fail 1\n");
+        return -1;
     }
     if( ppinfo->parent[ppinfo->lastElementIndex].isDirectory != 1 ) {
+        printf("fail 2\n");
         return -1;
     }
     struct DE* dir = loadDir(ppinfo->parent, ppinfo->lastElementIndex);
@@ -189,10 +198,10 @@ int parsePath(char* pathName, struct PPRETDATA *ppinfo){
     }
     struct DE* currDirectory = malloc(7*512);
     if(pathName[0] == '/'){
-        currDirectory = root;
+        currDirectory = loadDir(root, 0);
     }
     else {
-        currDirectory = cwd;
+        currDirectory = loadDir(cwd, 0);
     }
     char* savePtr = NULL;
     char* currToken = strtok_r(pathName, "/", &savePtr);
@@ -212,7 +221,8 @@ int parsePath(char* pathName, struct PPRETDATA *ppinfo){
     }
     printf("3\n");
     struct DE* prevDirectory = currDirectory;
-    int index = -1;
+    int index = findInDir(prevDirectory, currToken);
+    printf("result of index off rip: %i\n", index);
     char* prevToken = currToken;
     while( (currToken = strtok_r(NULL, "/", &savePtr)) != NULL ) {
         prevDirectory = currDirectory;
