@@ -125,6 +125,7 @@ char* cleanPath(char* pathname) {
  */
 int fs_setcwd(char *pathname){
     struct PPRETDATA *ppinfo = malloc( sizeof(struct PPRETDATA));
+    ppinfo->parent = malloc( 7 * 512 );
     int res = parsePath(pathname, ppinfo);
     if( res == -1 || ppinfo->lastElementIndex == -1){
             return -1;
@@ -181,23 +182,26 @@ void printDE(struct DE* directory) {
  * @return 0 on success -1 on failure
  */
 int parsePath(char* pathName, struct PPRETDATA *ppinfo){
+    printf("path: %s\n", pathName);
     printf("1\n");
-    struct DE* searchDirectory = malloc(7*512);
     if(pathName == NULL || ppinfo == NULL) {
         return -1;
     }
+    struct DE* currDirectory = malloc(7*512);
     if(pathName[0] == '/'){
-        searchDirectory = root;
+        currDirectory = root;
     }
     else {
-        searchDirectory = cwd;
+        currDirectory = cwd;
     }
     char* savePtr = NULL;
-    char* nextToken = strtok_r(pathName, "/", &savePtr);
+    char* currToken = strtok_r(pathName, "/", &savePtr);
     printf("2\n");
-    if( nextToken == NULL ) {
+    if( currToken == NULL ) {
         if(pathName[0] == '/') {
-            ppinfo->parent = searchDirectory;
+            printf("pre copy\n");
+            memcpy(ppinfo->parent, currDirectory, 7*512);
+            printf("post copy\n");
             ppinfo->lastElementIndex = -2;
             ppinfo->lastElementName = NULL;
             return 0;
@@ -207,31 +211,35 @@ int parsePath(char* pathName, struct PPRETDATA *ppinfo){
         }
     }
     printf("3\n");
-    char* currToken;
-    int index;
-    do {
-        currToken = nextToken;
-        printf("the current token is: %s\n", currToken);
-        index = findInDir(searchDirectory, nextToken);
+    struct DE* prevDirectory = currDirectory;
+    int index = -1;
+    char* prevToken = currToken;
+    while( (currToken = strtok_r(NULL, "/", &savePtr)) != NULL ) {
+        prevDirectory = currDirectory;
+        index = findInDir(prevDirectory, currToken);
         if( index == -1 ) {
-            if( searchDirectory != cwd && searchDirectory != root ) {
-                free(searchDirectory);
+            prevToken = currToken;
+            currToken = strtok_r(NULL, "/", &savePtr);
+            if( currToken == NULL ) {
+                memcpy(ppinfo->parent, prevDirectory, 7*512);
+                ppinfo->lastElementIndex = -1;
+                ppinfo->lastElementName = NULL;
+                return 0;
             }
-            return -1;
+            else {
+                return -1;
+            }
         }
-        struct DE* tempDir = searchDirectory;
-        searchDirectory = loadDir(tempDir, index);
-        if( tempDir != cwd && tempDir != root ) {
-            free(tempDir);
+        else {
+            currDirectory = loadDir(prevDirectory, index);
         }
-        nextToken = strtok_r(NULL, "/", &savePtr);
-    } while (nextToken != NULL);
+    }
     printf("4\n");
-    ppinfo->lastElementName = currToken;
+    memcpy(ppinfo->parent, prevDirectory, 7*512);
+    ppinfo->lastElementName = prevToken;
     ppinfo->lastElementIndex = index;
-    ppinfo->parent = searchDirectory;
-    if( searchDirectory != cwd && searchDirectory != root ) {
-        free(searchDirectory);
+    if( currDirectory != cwd && currDirectory != root ) {
+        free(currDirectory);
     }
     printf("5\n");
     return 0;
