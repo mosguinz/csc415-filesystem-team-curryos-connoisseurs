@@ -138,20 +138,24 @@ int fs_setcwd(char *pathname){
         printf("fail 1\n");
         return -1;
     }
-    if( ppinfo->parent[ppinfo->lastElementIndex].isDirectory != 1 ) {
+    struct DE* dir = loadDir(ppinfo->parent, ppinfo->lastElementIndex);
+    if( dir->isDirectory != 1 ) {
         printf("fail 2\n");
         return -1;
     }
-    struct DE* dir = loadDir(ppinfo->parent, ppinfo->lastElementIndex);
+    printf("reached 1\n");
     free(cwd);
     cwd = dir;
+    printf("reached 2\n");
     if( pathname[0] == '/' ) {
         cwdPathName = strdup(pathname);
     }
     else {
         strcat(cwdPathName, pathname);
     }
+    printf("reached 3\n");
     cwdPathName = cleanPath(cwdPathName);
+    printf("reached 4\n");
     return 0;
 }
 
@@ -175,12 +179,12 @@ void printVCB() {
 void printDE(struct DE* directory) {
     printf ("|--------------- Directory Entry ---------------|\n");
     printf ("|------- Variable ------|-------- Value --------|\n");
-    printf ("| name             | %-22s|\n", directory->name);
-    printf ("| size             | %-22i|\n", directory->size);
-    printf ("| location         | %-22li|\n", directory->location);
-    printf ("| is directory     | %-22i|\n", directory->isDirectory);
-    printf ("| date created     | %-22i|\n", directory->dateCreated);
-    printf ("| date modified    | %-22i|\n", directory->dataModified);
+    printf ("| name             | %-26s|\n", directory->name);
+    printf ("| size             | %-26i|\n", directory->size);
+    printf ("| location         | %-26li|\n", directory->location);
+    printf ("| is directory     | %-26i|\n", directory->isDirectory);
+    printf ("| date created     | %-26i|\n", directory->dateCreated);
+    printf ("| date modified    | %-26i|\n", directory->dataModified);
     printf ("|-----------------------------------------------|\n");
 }
 /*
@@ -220,12 +224,13 @@ int parsePath(char* pathName, struct PPRETDATA *ppinfo){
         }
     }
     printf("3\n");
-    struct DE* prevDirectory = currDirectory;
+    struct DE* prevDirectory = malloc(7 * 512);
+    memcpy(prevDirectory, currDirectory, 7 * 512);
     int index = findInDir(prevDirectory, currToken);
     printf("result of index off rip: %i\n", index);
     char* prevToken = currToken;
     while( (currToken = strtok_r(NULL, "/", &savePtr)) != NULL ) {
-        prevDirectory = currDirectory;
+        memcpy(prevDirectory, currDirectory, 7 * 512);
         index = findInDir(prevDirectory, currToken);
         if( index == -1 ) {
             prevToken = currToken;
