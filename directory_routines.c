@@ -19,6 +19,7 @@ int fs_mkdir (const char *pathname, mode_t mode){
 	struct DE * newDirectory;		// Used for new directory entry
 
 	parsepathinfo = malloc(sizeof(struct PPRETDATA));
+	parsepathinfo->parent = malloc(7*MINBLOCKSIZE);
 	newDirectory = malloc(MINBLOCKSIZE);
 	if ( !parsepathinfo || !newDirectory ){
 		perror("malloc");
