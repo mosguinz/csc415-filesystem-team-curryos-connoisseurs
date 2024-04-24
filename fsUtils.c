@@ -173,6 +173,12 @@ int fs_setcwd(char *pathname){
     return 0;
 }
 
+int fs_closedir(fdDir *dirp) {
+    printf("Closing %s\n", dirp->di->d_name);
+    free(dirp);
+    return 1;
+}
+
 
 /*
  * method to help with debugging. prints VCB block
