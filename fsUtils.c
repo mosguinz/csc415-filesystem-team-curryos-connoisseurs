@@ -136,9 +136,13 @@ char* cleanPath(char* pathname) {
  * @return int
  */
 int fs_setcwd(char *pathname){
+    printf("printing orginal curr dir\n");
+    printCurrDir();
     struct PPRETDATA *ppinfo = malloc( sizeof(struct PPRETDATA));
     ppinfo->parent = malloc( 7 * 512 );
     int res = parsePath(pathname, ppinfo);
+    printf("res: %i\n", res);
+    printf("lastElementIndex: %i\n", ppinfo->lastElementIndex);
     if( ppinfo->lastElementIndex == -2 ) {
         cwd = root;
         strcpy(cwdPathName, "/");
@@ -164,6 +168,7 @@ int fs_setcwd(char *pathname){
         strcat(cwdPathName, pathname);
     }
     cwdPathName = cleanPath(cwdPathName);
+    printf("printing new curr dir\n");
     printCurrDir();
     return 0;
 }
@@ -227,6 +232,7 @@ int parsePath(char* pathName, struct PPRETDATA *ppinfo){
     }
     char* savePtr = NULL;
     char* currToken = strtok_r(pathName, "/", &savePtr);
+    printf("curr token: %s\n", currToken);
     if( currToken == NULL ) {
         if(pathName[0] == '/') {
             memcpy(ppinfo->parent, currDirectory, 7*512);
@@ -241,11 +247,16 @@ int parsePath(char* pathName, struct PPRETDATA *ppinfo){
     struct DE* prevDirectory = malloc(7 * 512);
     memcpy(prevDirectory, currDirectory, 7 * 512);
     int index = findInDir(prevDirectory, currToken);
+    if(index != -1) {
+        currDirectory = loadDir(prevDirectory, index);
+    }
     char* prevToken = currToken;
     while( (currToken = strtok_r(NULL, "/", &savePtr)) != NULL ) {
+        printf("curr token: %s\n", currToken);
         memcpy(prevDirectory, currDirectory, 7 * 512);
         index = findInDir(prevDirectory, currToken);
         if( index == -1 ) {
+            printf("did not find the token\n");
             prevToken = currToken;
             currToken = strtok_r(NULL, "/", &savePtr);
             if( currToken == NULL ) {
