@@ -77,6 +77,26 @@ int getFreeBlocks(uint64_t numberOfBlocks) {
 }
 
 /*
+ * return free blocks
+ *
+ * @param location the location of the block for the blocks being returned
+ * @return the number of blocks that were returned. -1 on error
+ */
+int returnFreeBlocks(int location){
+    if( location < 1 || location > volumeControlBlock->freeSpaceSize ) {
+        return -1;
+    }
+    int currBlockLoc = location;
+    int i = 0;
+    while( fat[currBlockLoc] != 0xFFFFFFFF ) {
+        currBlockLoc = fat[currBlockLoc];
+        i++;
+    }
+    fat[currBlockLoc] = volumeControlBlock->firstBlock;
+    volumeControlBlock->firstBlock = location;
+    return i;
+}
+/*
  * write blocks to disk
  *
  * @param buff the buffer that is being written
