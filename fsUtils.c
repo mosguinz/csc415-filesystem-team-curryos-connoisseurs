@@ -106,6 +106,7 @@ char* cleanPath(char* pathname) {
         token = strtok_r(NULL, "/", &savePtr);
         size++;
     }
+    printf("size: %i\n", size);
     int* indices = malloc(sizeof(int) * size);
     int index = 0;
     int i = 0;
@@ -115,6 +116,7 @@ char* cleanPath(char* pathname) {
         else if( strcmp(token, "..") == 0 && index > 0) {
             index--;
         }
+        else if( strcmp(token, "..") == 0 && index == 0  );
         else {
             indices[index] = i;
             index++;
@@ -150,9 +152,7 @@ int fs_setcwd(char *pathname){
         return -1;
     }
     struct DE* dir = malloc(512 * 7 );
-    printPPInfo(ppinfo);
     dir = loadDir(ppinfo->parent, ppinfo->lastElementIndex);
-    printDE(dir);
     if( dir->isDirectory != 1 ) {
         free(dir);
         printf("fail 2\n");
@@ -167,6 +167,7 @@ int fs_setcwd(char *pathname){
         strcat(cwdPathName, pathname);
     }
     cwdPathName = cleanPath(cwdPathName);
+    printCurrDir();
     return 0;
 }
 
