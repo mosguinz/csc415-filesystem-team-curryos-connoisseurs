@@ -35,7 +35,7 @@ int findInDir(struct DE* searchDirectory, char* name){
  * @return the loaded directory (needs to be freed)
  */
 struct DE* loadDir(struct DE* searchDirectory, int index) {
-    int size = NMOverM(searchDirectory[0].size, volumeControlBlock->blockSize);
+    int size = NMOverM(searchDirectory[index].size, volumeControlBlock->blockSize);
     int loc = searchDirectory[index].location;
     struct DE* directories = (struct DE*)malloc(7 * 512);
     int res = fileRead(directories, size, loc);
@@ -88,7 +88,8 @@ void printCurrDir() {
  * @return the path of the current working directory
  */
 char * fs_getcwd(char *pathname, size_t size){
-    return cwd->name;
+    strncpy(pathname, cwdPathName, size);
+    return cwdPathName;
 }
 
 /*
@@ -105,6 +106,7 @@ char* cleanPath(char* pathname) {
         token = strtok_r(NULL, "/", &savePtr);
         size++;
     }
+    printf("size: %i\n", size);
     int* indices = malloc(sizeof(int) * size);
     int index = 0;
     int i = 0;
@@ -114,6 +116,7 @@ char* cleanPath(char* pathname) {
         else if( strcmp(token, "..") == 0 && index > 0) {
             index--;
         }
+        else if( strcmp(token, "..") == 0 && index == 0  );
         else {
             indices[index] = i;
             index++;
@@ -136,13 +139,9 @@ char* cleanPath(char* pathname) {
  * @return int
  */
 int fs_setcwd(char *pathname){
-    printf("printing orginal curr dir\n");
-    printCurrDir();
     struct PPRETDATA *ppinfo = malloc( sizeof(struct PPRETDATA));
     ppinfo->parent = malloc( 7 * 512 );
     int res = parsePath(pathname, ppinfo);
-    printf("res: %i\n", res);
-    printf("lastElementIndex: %i\n", ppinfo->lastElementIndex);
     if( ppinfo->lastElementIndex == -2 ) {
         cwd = root;
         strcpy(cwdPathName, "/");
@@ -168,7 +167,6 @@ int fs_setcwd(char *pathname){
         strcat(cwdPathName, pathname);
     }
     cwdPathName = cleanPath(cwdPathName);
-    printf("printing new curr dir\n");
     printCurrDir();
     return 0;
 }
@@ -254,6 +252,7 @@ int parsePath(char* pathName, struct PPRETDATA *ppinfo){
     memcpy(prevDirectory, currDirectory, 7 * 512);
     int index = findInDir(prevDirectory, currToken);
     if(index != -1) {
+        printf("made the correct curr dir\n");
         currDirectory = loadDir(prevDirectory, index);
     }
     char* prevToken = currToken;
@@ -266,9 +265,11 @@ int parsePath(char* pathName, struct PPRETDATA *ppinfo){
             prevToken = currToken;
             currToken = strtok_r(NULL, "/", &savePtr);
             if( currToken == NULL ) {
+                printf("hit the correct if statement");
                 memcpy(ppinfo->parent, prevDirectory, 7*512);
                 ppinfo->lastElementIndex = -1;
                 ppinfo->lastElementName = NULL;
+                printPPInfo(ppinfo);
                 return 0;
             }
             else {
