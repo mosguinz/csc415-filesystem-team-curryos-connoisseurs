@@ -83,17 +83,24 @@ int getFreeBlocks(uint64_t numberOfBlocks) {
  * @return the number of blocks that were returned. -1 on error
  */
 int returnFreeBlocks(int location){
-    if( location < 1 || location > volumeControlBlock->freeSpaceSize ) {
+    printf("reached the return free blocks method\n");
+    printf("the location: %i\n", location);
+    // TODO: Check if location
+    if( location < 1 || location > volumeControlBlock->totalBlocks ) {
+        printf("hit the early return\n");
         return -1;
     }
     int currBlockLoc = location;
+    printf("currBlockLoc: %i\n", currBlockLoc);
     int i = 0;
     while( fat[currBlockLoc] != 0xFFFFFFFF ) {
         currBlockLoc = fat[currBlockLoc];
+        printf("currBlockLoc: %i\n", currBlockLoc);
         i++;
     }
     fat[currBlockLoc] = volumeControlBlock->firstBlock;
     volumeControlBlock->firstBlock = location;
+    printf("vcb first block: %i\n", volumeControlBlock->firstBlock);
     return i;
 }
 /*

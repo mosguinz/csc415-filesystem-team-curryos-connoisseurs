@@ -33,7 +33,7 @@ int fs_mkdir (const char *pathname, mode_t mode){
 	directoryName = parsepathinfo->lastElementName;
 
 	// Create and link new directory to an empty position in parent array
-	ret = createDirectory(DEFAULTDIRSIZE, parent);	
+	ret = createDirectory(DEFAULTDIRSIZE, parent);
 	if ( ret == -1 ){
 		perror("Create Directory");
 		return -1;
@@ -51,17 +51,17 @@ int fs_mkdir (const char *pathname, mode_t mode){
 	printf("New Directory Name:\t%s\n", parent[emptyIndex].name);
 	printf("New Directory Size:\t%d\n", parent[emptyIndex].size);
 	printf("New Directory Created At:\t%ld\n", parent[emptyIndex].location);
-	
+
 	// Write changes back to parent directory to complete linking
 	fileWrite(parent, (parent->size/MINBLOCKSIZE), parent->location);
 
 	return 0;
 }
 
-int fs_rmdir ( const char * pathname ){
-
-	return 0;
-}
+// int fs_rmdir ( const char * pathname ){
+//
+// 	return 0;
+// }
 
 // Helper function for finding an empty space in a directory
 int find_vacant_space ( struct DE * directory ){
