@@ -247,7 +247,7 @@ void clearDir(struct DE* dir) {
     fileWrite(dir, dir->size, location);
 }
 
-int fs_rmdir(const char *pathname){
+int fs_rmdir(const char *pathname) {
     struct PPRETDATA *ppinfo = malloc( sizeof(struct PPRETDATA));
     ppinfo->parent = malloc( 7 * 512 );
     int res = parsePath(pathname, ppinfo);
@@ -317,7 +317,7 @@ int parsePath(char* pathName, struct PPRETDATA *ppinfo){
             if( currToken == NULL ) {
                 memcpy(ppinfo->parent, prevDirectory, 7*512);
                 ppinfo->lastElementIndex = -1;
-                ppinfo->lastElementName = NULL;
+                ppinfo->lastElementName = prevToken;
                 printPPInfo(ppinfo);
                 return 0;
             }

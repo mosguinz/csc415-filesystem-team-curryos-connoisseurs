@@ -26,7 +26,10 @@ int fs_mkdir (const char *pathname, mode_t mode){
 		return -1;
 	}
 
-	parsePath(pathname, parsepathinfo);
+	if( parsePath(pathname, parsepathinfo) == -1 ) {
+        printf("invalid path\n");
+        return -1;
+    }
 	// Read all relevant data from parsepath needed for directory creation
 	parent = parsepathinfo -> parent;
 	directoryName = parsepathinfo->lastElementName;
