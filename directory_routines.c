@@ -27,7 +27,6 @@ int fs_mkdir (const char *pathname, mode_t mode){
 	}
 
 	parsePath(pathname, parsepathinfo);
-
 	// Read all relevant data from parsepath needed for directory creation
 	parent = parsepathinfo -> parent;
 	directoryName = parsepathinfo->lastElementName;
@@ -48,25 +47,15 @@ int fs_mkdir (const char *pathname, mode_t mode){
 	parent[emptyIndex] = newDirectory[0];
 	strncpy(parent[emptyIndex].name, directoryName, 36);
 
-	printf("New Directory Name:\t%s\n", parent[emptyIndex].name);
-	printf("New Directory Size:\t%d\n", parent[emptyIndex].size);
-	printf("New Directory Created At:\t%ld\n", parent[emptyIndex].location);
-
 	// Write changes back to parent directory to complete linking
 	fileWrite(parent, (parent->size/MINBLOCKSIZE), parent->location);
 
 	return 0;
 }
 
-// int fs_rmdir ( const char * pathname ){
-//
-// 	return 0;
-// }
-
-// Helper function for finding an empty space in a directory
 int find_vacant_space ( struct DE * directory ){
-	for ( int i = 0 ; i < (root->size)/sizeof(struct DE) ; i++ )
-		if ( (root + i)->location == -2 )
+	for ( int i = 0 ; i < (directory->size)/sizeof(struct DE) ; i++ )
+		if ( (directory + i)->location == -2 )
 			return i;
 	perror("Directory is full");
 	return -1;
