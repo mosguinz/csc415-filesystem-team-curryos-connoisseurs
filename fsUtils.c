@@ -20,8 +20,7 @@ int NMOverM(int n, int m){
 int findInDir(struct DE* searchDirectory, char* name){
     int res = -1;
     for( int i = 0; i < DECOUNT; i++) {
-        if( searchDirectory[i].location != 0xFFFFFFFE &&
-                strcmp(searchDirectory[i].name, name ) == 0) {
+        if( searchDirectory[i].location != -2l && strcmp(searchDirectory[i].name, name ) == 0) {
             res = i;
         }
     }
@@ -110,7 +109,6 @@ char* cleanPath(char* pathname) {
         token = strtok_r(NULL, "/", &savePtr);
         size++;
     }
-    printf("size: %i\n", size);
     int* indices = malloc(sizeof(int) * size);
     int index = 0;
     int i = 0;
@@ -147,7 +145,7 @@ int fs_setcwd(char *pathname){
     ppinfo->parent = malloc( 7 * 512 );
     int res = parsePath(pathname, ppinfo);
     if( ppinfo->lastElementIndex == -2 ) {
-        cwd = root;
+        cwd = loadDir(root, 0);
         strcpy(cwdPathName, "/");
         return 0;
     }
@@ -233,7 +231,6 @@ int fs_delete(char* filename){
 
 void clearDir(struct DE* dir) {
     int location = dir->location;
-    printf("location in clear: %i\n", location);
     int size = NMOverM(dir->size, volumeControlBlock->blockSize);
     for(int i=2; i < DECOUNT; i++) {
         if(dir[i].isDirectory == 1) {
@@ -241,11 +238,13 @@ void clearDir(struct DE* dir) {
             clearDir(currDir);
             free(currDir);
         }
-        if( dir[i].location >=0 ) {
+        if( dir[i].location >= 0 ) {
             returnFreeBlocks(dir[i].location);
         }
+        dir[i].location = (long)-2;
     }
     returnFreeBlocks(location);
+    fileWrite(dir, dir->size, location);
 }
 
 int fs_rmdir(const char *pathname){
@@ -253,12 +252,12 @@ int fs_rmdir(const char *pathname){
     ppinfo->parent = malloc( 7 * 512 );
     int res = parsePath(pathname, ppinfo);
     int index = ppinfo->lastElementIndex;
-    if( res == -1 || index == -1 ) {
+    if( res == -1 || index <= -1 ) {
         return -1;
     }
-    struct DE* currDir = loadDir(ppinfo->parent, index);
+    struct DE* currDir = loadDir(ppinfo->parent, index);;
     clearDir(currDir);
-    ppinfo->parent[index].location = 0xFFFFFFFE;
+    ppinfo->parent[index].location = (long)-2;
     int size = NMOverM(ppinfo->parent->size, volumeControlBlock->blockSize);
     int location = ppinfo->parent->location;
     fileWrite(ppinfo->parent, size, location);
