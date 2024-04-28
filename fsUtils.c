@@ -13,7 +13,9 @@ int NMOverM(int n, int m){
 /** Get the file name from a path i.e., last token after slash. */
 char* extractFileName(const char* path) {
     char* lastSlash = strrchr(path, '/');
-    return lastSlash ? lastSlash+1 : path;
+    if (strlen(path) == 1 && path[0] == '/') return ".";
+    if (lastSlash) return lastSlash+1;
+    return path;
 }
 
 /*
