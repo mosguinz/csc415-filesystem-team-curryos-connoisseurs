@@ -36,7 +36,7 @@ typedef struct b_fcb
 
 	int activeFlags;	//holds the flags for the opened file
 	} b_fcb;
-	
+
 b_fcb fcbArray[MAXFCBS];
 
 int startup = 0;	//Indicates that this has not been initialized
@@ -49,7 +49,7 @@ void b_init ()
 		{
 		fcbArray[i].buf = NULL; //indicates a free fcbArray
 		}
-		
+
 	startup = 1;
 	}
 
@@ -65,7 +65,7 @@ b_io_fd b_getFCB ()
 		}
 	return (-1);  //all in use
 	}
-	
+
 // Interface to open a buffered file
 // Modification of interface for this assignment, flags match the Linux flags for open
 // O_RDONLY, O_WRONLY, or O_RDWR
@@ -73,17 +73,17 @@ b_io_fd b_open (char * filename, int flags){
 	int ret;
 	b_io_fd returnFd;
 
-		
+
 	if (startup == 0) b_init();  //Initialize our system
-	
+
 	returnFd = b_getFCB();				// get our own file descriptor
 										// check for error - all used FCB's
-	
+
 	return (returnFd);						// all set
 }
 
 
-// Interface to seek function	
+// Interface to seek function
 int b_seek (b_io_fd fd, off_t offset, int whence)
 	{
 	if (startup == 0) b_init();  //Initialize our system
@@ -93,14 +93,14 @@ int b_seek (b_io_fd fd, off_t offset, int whence)
 		{
 		return (-1); 					//invalid file descriptor
 		}
-		
-		
+
+
 	return (0); //Change this
 	}
 
 
 
-// Interface to write function	
+// Interface to write function
 int b_write (b_io_fd fd, char * buffer, int count)
 	{
 	if (startup == 0) b_init();  //Initialize our system
@@ -110,8 +110,8 @@ int b_write (b_io_fd fd, char * buffer, int count)
 		{
 		return (-1); 					//invalid file descriptor
 		}
-		
-		
+
+
 	return (0); //Change this
 	}
 
@@ -125,7 +125,7 @@ int b_write (b_io_fd fd, char * buffer, int count)
 //        size chunks needed to fill the callers request.  This represents the number of
 //        bytes in multiples of the blocksize.
 // Part 3 is a value less than blocksize which is what remains to copy to the callers buffer
-//        after fulfilling part 1 and part 2.  This would always be filled from a refill 
+//        after fulfilling part 1 and part 2.  This would always be filled from a refill
 //        of our buffer.
 //  +-------------+------------------------------------------------+--------+
 //  |             |                                                |        |
@@ -146,12 +146,13 @@ int b_read (b_io_fd fd, char * buffer, int count)
 		{
 		return (-1); 					//invalid file descriptor
 		}
-		
+
 	return (0);	//Change this
 	}
-	
-// Interface to Close the file	
-int b_close (b_io_fd fd)
-	{
 
-	}
+// Interface to Close the file
+int b_close (b_io_fd fd)
+{
+    free(fcbArray[fd].buf);
+    fcbArray[fd].fileInfo = NULL;
+}
