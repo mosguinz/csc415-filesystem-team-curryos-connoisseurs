@@ -145,3 +145,17 @@ int fileRead(void* buff, int numberOfBlocks, int location){
     }
     return blocksRead;
 }
+
+/*
+ * get the index n blocks over
+ *
+ * @param location the location of the block where the search is starting at
+ * @param numberOfBlocks the number of blocks to move over
+ * @return the index of the block n blocks over. -1 on error
+ */
+int fileSeek(int location, int numberOfBlocks){
+    for( int i = 0; location != -1l && i < numberOfBlocks; i ++ ) {
+        location = fat[location];
+    }
+    return location;
+}
