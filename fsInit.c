@@ -86,7 +86,7 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 void exitFileSystem (){
 	fileWrite(volumeControlBlock, 1, 0);
 	fileWrite(fat,
-		sizeof(int) * volumeControlBlock -> freeSpaceSize,
+		MINBLOCKSIZE * volumeControlBlock -> freeSpaceSize,
 		volumeControlBlock -> freeSpaceLocation);
 	printf ("System exiting\n");
 }

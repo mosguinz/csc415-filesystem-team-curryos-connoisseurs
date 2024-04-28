@@ -8,7 +8,7 @@
 *
 * File:: mfs.h
 *
-* Description:: 
+* Description::
 *	This is the file system interface.
 *	This is the interface needed by the driver to interact with
 *	your filesystem.
@@ -42,7 +42,7 @@ typedef u_int32_t uint32_t;
 struct fs_diriteminfo
 	{
     unsigned short d_reclen;    /* length of this record */
-    unsigned char fileType;    
+    unsigned char fileType;
     char d_name[256]; 			/* filename max filename is 255 characters */
 	};
 
@@ -63,6 +63,7 @@ typedef struct
 // Key directory functions
 int fs_mkdir(const char *pathname, mode_t mode);
 int fs_rmdir(const char *pathname);
+int fs_mv(const char *startpathname, const char *endpathname);
 
 // Directory iteration functions
 fdDir * fs_opendir(const char *pathname);
@@ -86,7 +87,7 @@ struct fs_stat
 	time_t    st_accesstime;   	/* time of last access */
 	time_t    st_modtime;   	/* time of last modification */
 	time_t    st_createtime;   	/* time of last status change */
-	
+
 	/* add additional attributes here for your file system */
 	};
 

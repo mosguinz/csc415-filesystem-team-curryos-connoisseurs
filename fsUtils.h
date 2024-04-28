@@ -14,7 +14,7 @@ int NMOverM(int n, int m);
  * @param ppinfo the struct that will be populated
  * @return 0 on success -1 on failure
  */
-int parsePath(char* pathNmae, struct PPRETDATA *ppinfo);
+int parsePath(const char* pathNmae, struct PPRETDATA *ppinfo);
 
 /*
  * find the index of the child
@@ -24,6 +24,14 @@ int parsePath(char* pathNmae, struct PPRETDATA *ppinfo);
  * @return the index of the DE or -1 if not found
  */
 int findInDir(struct DE* searchDirectory, char* name);
+
+/*
+ * find the index of an empty DE
+ *
+ * @param directory the DE that is being searched
+ * @return the index of the DE or -1 if not found
+ */
+int find_vacant_space ( struct DE * directory );
 
 /*
  * method to help with debugging. prints VCB block

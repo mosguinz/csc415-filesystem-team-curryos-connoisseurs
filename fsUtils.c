@@ -36,6 +36,20 @@ int findInDir(struct DE* searchDirectory, char* name){
 }
 
 /*
+ * find the index of an empty DE
+ *
+ * @param directory the DE that is being searched
+ * @return the index of the DE or -1 if not found
+ */
+int find_vacant_space ( struct DE * directory ){
+	for ( int i = 0 ; i < (directory->size)/sizeof(struct DE) ; i++ )
+		if ( (directory + i)->location == -2 )
+			return i;
+	perror("Directory is full");
+	return -1;
+}
+
+/*
  * load a directory
  *
  * @param searchDirectory the parentDirectory
@@ -90,6 +104,66 @@ void printCurrDir() {
     free(searchDirectory);
 }
 
+/*
+ * move a file or directory from 1 location to another
+ *
+ * @param startpathname the path to the file that is being moved
+ * @param endpathname the directory to move the file into
+ * @return 0 on sucess else -1
+ */
+int fs_mv(const char* startpathname, const char* endpathname) {
+    struct PPRETDATA *startppinfo = malloc( sizeof(struct PPRETDATA));
+    startppinfo->parent = malloc( 7 * 512 );
+    int startRes = parsePath(startpathname, startppinfo);
+    int startIndex = startppinfo->lastElementIndex;
+    if( startRes == -1 || startIndex == -1 ) {
+        free(startppinfo->parent);
+        free(startppinfo);
+        return -1;
+    }
+
+    struct PPRETDATA *endppinfo = malloc( sizeof(struct PPRETDATA));
+    endppinfo->parent = malloc( 7 * 512 );
+    int endRes = parsePath(endpathname, endppinfo);
+    int endIndex = endppinfo->lastElementIndex;
+    if( endRes == -1 || endIndex == -1 || endppinfo->parent[endIndex].isDirectory == 0) {
+        free(startppinfo->parent);
+        free(startppinfo);
+        free(endppinfo->parent);
+        free(endppinfo);
+        return -1;
+    }
+
+    struct DE* endDir = loadDir(endppinfo->parent, endIndex);
+
+    int emptyIndex = find_vacant_space(endDir);
+    if(emptyIndex == -1) {
+        free(startppinfo->parent);
+        free(startppinfo);
+        free(endppinfo->parent);
+        free(endppinfo);
+        free(endDir);
+        return -1;
+    }
+
+    struct DE* parentDir = startppinfo->parent;
+    struct DE* sourceDir = loadDir(startppinfo->parent, startIndex);
+    endDir[emptyIndex] = parentDir[startIndex];
+    parentDir[startIndex].location = -2l;
+    sourceDir[1] = endDir[0];
+
+    fileWrite(endDir, NMOverM(endDir->size, MINBLOCKSIZE), endDir->location);
+    fileWrite(parentDir, NMOverM(parentDir->size, MINBLOCKSIZE), parentDir->location);
+    fileWrite(sourceDir, NMOverM(sourceDir->size, MINBLOCKSIZE), sourceDir->location);
+
+    free(startppinfo->parent);
+    free(startppinfo);
+    free(endppinfo->parent);
+    free(endppinfo);
+    free(endDir);
+    free(sourceDir);
+    return 0;
+}
 
 /*
  * gets the path of the current working directory
@@ -177,7 +251,8 @@ int fs_setcwd(char *pathname){
         strcat(cwdPathName, pathname);
     }
     cwdPathName = cleanPath(cwdPathName);
-    fileWrite(cwd, cwd->size, cwd->location);
+    int size = NMOverM(cwd->size, MINBLOCKSIZE);
+    fileWrite(cwd, size, cwd->location);
     printCurrDir();
     return 0;
 }
@@ -289,26 +364,26 @@ int fs_delete(char* filename){
     if( returnFreeBlocks(cwd[index].location) == -1) {
         return -1;
     }
-    cwd[index].location = 0xFFFFFFFE;
+    cwd[index].location = -2l;
     return 0;
 }
 
 void clearDir(struct DE* dir) {
     int location = dir->location;
-    int size = NMOverM(dir->size, volumeControlBlock->blockSize);
     for(int i=2; i < DECOUNT; i++) {
-        if(dir[i].isDirectory == 1) {
+        if(dir[i].location > 0 && dir[i].isDirectory == 1) {
             struct DE* currDir = loadDir(dir, i);
             clearDir(currDir);
             free(currDir);
         }
-        if( dir[i].location >= 0 ) {
+        if( dir[i].location > 0 && dir[i].isDirectory == 0) {
             returnFreeBlocks(dir[i].location);
+            dir[i].location = (long)-2;
         }
-        dir[i].location = (long)-2;
     }
     returnFreeBlocks(location);
-    fileWrite(dir, dir->size, location);
+    int size = NMOverM(dir->size, MINBLOCKSIZE);
+    fileWrite(dir, size, location);
 }
 
 int fs_rmdir(const char *pathname) {
@@ -338,7 +413,7 @@ int fs_rmdir(const char *pathname) {
  * @param ppinfo the struct that will be populated
  * @return 0 on success -1 on failure
  */
-int parsePath(char* pathName, struct PPRETDATA *ppinfo){
+int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
     printf("path: %s\n", pathName);
     if(pathName == NULL || ppinfo == NULL) {
         return -1;
@@ -351,16 +426,19 @@ int parsePath(char* pathName, struct PPRETDATA *ppinfo){
         currDirectory = loadDir(cwd, 0);
     }
     char* savePtr = NULL;
-    char* currToken = strtok_r(pathName, "/", &savePtr);
+    char* path = strdup(pathName);
+    char* currToken = strtok_r(path, "/", &savePtr);
     printf("curr token: %s\n", currToken);
     if( currToken == NULL ) {
         if(pathName[0] == '/') {
             memcpy(ppinfo->parent, currDirectory, 7*512);
             ppinfo->lastElementIndex = -2;
             ppinfo->lastElementName = NULL;
+            free(path);
             return 0;
         }
         else {
+            free(path);
             return -1;
         }
     }
@@ -382,7 +460,6 @@ int parsePath(char* pathName, struct PPRETDATA *ppinfo){
                 memcpy(ppinfo->parent, prevDirectory, 7*512);
                 ppinfo->lastElementIndex = -1;
                 ppinfo->lastElementName = prevToken;
-                printPPInfo(ppinfo);
                 return 0;
             }
             else {

@@ -7,6 +7,7 @@
 #include "mfs.h"
 #include "fs_control.h"
 #include "freespace.h"
+#include "fsUtils.h"
 
 int createDirectory(int numberOfEntries, struct DE *parent)
 {
@@ -18,8 +19,8 @@ int createDirectory(int numberOfEntries, struct DE *parent)
 	/* From # of entries argument determine the maximum number of
 	 * entries we can actually fit */
 	bytes = sizeof(struct DE) * numberOfEntries;
-	blockCount =
-		((bytes + MINBLOCKSIZE - 1) / MINBLOCKSIZE);
+	blockCount = NMOverM(bytes, MINBLOCKSIZE);
+		// ((bytes + MINBLOCKSIZE - 1) / MINBLOCKSIZE);
 	maxEntryCount = (blockCount * MINBLOCKSIZE) / sizeof(struct DE);
 
 	// Allocate memory for directory
