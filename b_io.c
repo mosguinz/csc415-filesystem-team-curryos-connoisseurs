@@ -153,34 +153,83 @@ int b_read (b_io_fd fd, char * buffer, int count) {
         return -1;
     }
 
-    int userPosition = 0;
-    int bytesRead = 0;
-    b_fcb fcb = fcbArray[fd];
+    if( count < 0 ) {
+        return -1;
+    }
 
-    // ensure that only as many as there are available are returned to the user
+    // int userPosition = 0;
+    // int bytesRead = 0;
+    // b_fcb fcb = fcbArray[fd];
+
+    // // ensure that only as many as there are available are returned to the user
+    // if( count > fcb.remainingBytes ) {
+    //     count = fcb.remainingBytes;
+    // }
+    // // iterate, so that as per specification the buffer can be copied over in chunks
+    // while( count > B_CHUNK_SIZE - fcb.index ) {
+    //     int size = B_CHUNK_SIZE - fcb.index;
+    //     memcpy(buffer + userPosition, fcb.buf + fcb.index, size);
+    //     userPosition += size;
+    //     fcb.index = 0;
+    //     int numBlocks = fileRead(fcb.buf, 1, fcb.fileInfo->location + fcb.blocksRead);
+    //     if( numBlocks != 1 ) {
+    //         return -1;
+    //     }
+    //     fcb.blocksRead += numBlocks;
+    //     count -= size;
+    //     bytesRead += size;
+    //     fcb.remainingBytes -= size;
+    // }
+    // memcpy(buffer + userPosition, fcb.buf + fcb.index, count);
+    // fcb.index += count;
+    // fcb.remainingBytes -= count;
+    // fcbArray[fd] = fcb;
+    // return bytesRead + count;
+
+    int part1, part2, part3;
+    int numBlocks;
+    b_fcb fcb = fcbArray[fd];
+    int bytesInBuff = fcb.buflen - fcb.index;
+
     if( count > fcb.remainingBytes ) {
         count = fcb.remainingBytes;
     }
-    // iterate, so that as per specification the buffer can be copied over in chunks
-    while( count > B_CHUNK_SIZE - fcb.index ) {
-        int size = B_CHUNK_SIZE - fcb.index;
-        memcpy(buffer + userPosition, fcb.buf + fcb.index, size);
-        userPosition += size;
-        fcb.index = 0;
-        int numBlocks = fileRead(fcb.buf, 1, fcb.fileInfo->location + fcb.blocksRead);
-        if( numBlocks != 1 ) {
-            return -1;
-        }
-        fcb.blocksRead += numBlocks;
-        count -= size;
-        bytesRead += size;
-        fcb.remainingBytes -= size;
+    if( bytesInBuff > count ) {
+        part1 = count;
+        part2 = 0;
+        part3 = 0;
     }
-    memcpy(buffer + userPosition, fcb.buf + fcb.index, count);
-    fcb.index += count;
-    fcb.remainingBytes -= count;
+    else {
+        part1 = bytesInBuff;
+        part3 = count - bytesInBuff;
+        numBlocks = part3/B_CHUNK_SIZE;
+        part2 = numBlocks * B_CHUNK_SIZE;
+        part3 -= part2;
+    }
+    if( part1 > 0 ) {
+        memcpy(buffer, fcb.buf, part1);
+    }
+    if( part2 > 0 ) {
+        int blocksRead = fileRead(buffer + part1, numBlocks, fcb.currentBlock);
+        fcb.currentBlock = fileSeek(fcb.currentBlock, numBlocks);
+        part2 = blocksRead * B_CHUNK_SIZE;
+    }
+    if( part3 > 0 ) {
+        int blocksRead = fileRead(fcb.buf, 1, fcb.currentBlock);
+        fcb.currentBlock = fileSeek(fcb.currentBlock, 1);
+        fcb.index = 0;
+        fcb.buflen = blocksRead * B_CHUNK_SIZE;
+        if( fcb.buflen < part3 ) {
+            part3 = fcb.buflen;
+        }
+        if( part3 > 0 ) {
+            memcpy(buffer + part1 + part2, fcb.buf + fcb.index, part3);
+            fcb.index += part3;
+        }
+    }
+    fcb.remainingBytes = fcb.remainingBytes - part1 - part2 - part3;
     fcbArray[fd] = fcb;
-    return bytesRead + count;
+    return part1 + part2 + part3;
 }
 
 // Interface to Close the file
