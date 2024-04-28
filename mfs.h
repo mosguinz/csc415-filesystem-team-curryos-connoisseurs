@@ -42,7 +42,7 @@ typedef u_int32_t uint32_t;
 struct fs_diriteminfo
 	{
     unsigned short d_reclen;    /* length of this record */
-    unsigned char fileType;
+    unsigned int fileType;    
     char d_name[256]; 			/* filename max filename is 255 characters */
 	};
 
