@@ -183,6 +183,12 @@ int fs_setcwd(char *pathname){
 }
 
 int fs_closedir(fdDir *dirp) {
+
+    if (dirp == NULL) {
+        perror("Cannot close directory, is null\n");
+        return 0;
+    }
+
     printf("Closing %s\n", dirp->di->d_name);
     free(dirp);
     return 1;
