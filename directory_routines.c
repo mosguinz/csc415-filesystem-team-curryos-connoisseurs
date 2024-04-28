@@ -51,15 +51,9 @@ int fs_mkdir (const char *pathname, mode_t mode){
 	strncpy(parent[emptyIndex].name, directoryName, 36);
 
 	// Write changes back to parent directory to complete linking
-	fileWrite(parent, (parent->size/MINBLOCKSIZE), parent->location);
+    int size = NMOverM(parent->size, MINBLOCKSIZE);
+	fileWrite(parent, size, parent->location);
 
 	return 0;
 }
 
-int find_vacant_space ( struct DE * directory ){
-	for ( int i = 0 ; i < (directory->size)/sizeof(struct DE) ; i++ )
-		if ( (directory + i)->location == -2 )
-			return i;
-	perror("Directory is full");
-	return -1;
-}

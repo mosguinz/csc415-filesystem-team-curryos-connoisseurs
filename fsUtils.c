@@ -28,6 +28,20 @@ int findInDir(struct DE* searchDirectory, char* name){
 }
 
 /*
+ * find the index of an empty DE
+ *
+ * @param directory the DE that is being searched
+ * @return the index of the DE or -1 if not found
+ */
+int find_vacant_space ( struct DE * directory ){
+	for ( int i = 0 ; i < (directory->size)/sizeof(struct DE) ; i++ )
+		if ( (directory + i)->location == -2 )
+			return i;
+	perror("Directory is full");
+	return -1;
+}
+
+/*
  * load a directory
  *
  * @param searchDirectory the parentDirectory
@@ -82,6 +96,44 @@ void printCurrDir() {
     free(searchDirectory);
 }
 
+/*
+ * move a file or directory from 1 location to another
+ *
+ * @param startpathname the path to the file that is being moved
+ * @param endpathname the directory to move the file into
+ * @return 0 on sucess else -1
+ */
+int fs_mv(const char* startpathname, const char* endpathname) {
+    struct PPRETDATA *startppinfo = malloc( sizeof(struct PPRETDATA));
+    startppinfo->parent = malloc( 7 * 512 );
+    int startRes = parsePath(startpathname, startppinfo);
+    int startIndex = startppinfo->lastElementIndex;
+    if( startRes == -1 || startIndex == -1 ) {
+        free(startppinfo->parent);
+        free(startppinfo);
+        return -1;
+    }
+
+    struct PPRETDATA *endppinfo = malloc( sizeof(struct PPRETDATA));
+    endppinfo->parent = malloc( 7 * 512 );
+    int endRes = parsePath(endpathname, endppinfo);
+    int endIndex = endppinfo->lastElementIndex;
+    if( endRes == -1 || endIndex == -1 ) {
+        free(startppinfo->parent);
+        free(startppinfo);
+        free(endppinfo->parent);
+        free(endppinfo);
+        return -1;
+    }
+
+
+    struct DE* sourceDir = loadDir(startppinfo->parent, startIndex);
+    struct DE* endDir = loadDir(endppinfo->parent, endIndex);
+
+    fileWrite(endDir, NMOverM(endDir->size, MINBLOCKSIZE), endDir->location);
+
+    return 0;
+}
 
 /*
  * gets the path of the current working directory
@@ -169,7 +221,8 @@ int fs_setcwd(char *pathname){
         strcat(cwdPathName, pathname);
     }
     cwdPathName = cleanPath(cwdPathName);
-    fileWrite(cwd, cwd->size, cwd->location);
+    int size = NMOverM(cwd->size, MINBLOCKSIZE);
+    fileWrite(cwd, size, cwd->location);
     printCurrDir();
     return 0;
 }
@@ -231,10 +284,7 @@ int fs_delete(char* filename){
 
 void clearDir(struct DE* dir) {
     int location = dir->location;
-    printf("location in clearDir: %i\n", location);
-    int size = NMOverM(dir->size, volumeControlBlock->blockSize);
     for(int i=2; i < DECOUNT; i++) {
-        printf("clearDir Loc: %i value of i: %i\n", location, i);
         if(dir[i].location > 0 && dir[i].isDirectory == 1) {
             struct DE* currDir = loadDir(dir, i);
             clearDir(currDir);
@@ -246,7 +296,8 @@ void clearDir(struct DE* dir) {
         }
     }
     returnFreeBlocks(location);
-    fileWrite(dir, dir->size, location);
+    int size = NMOverM(dir->size, MINBLOCKSIZE);
+    fileWrite(dir, size, location);
 }
 
 int fs_rmdir(const char *pathname) {
@@ -276,7 +327,7 @@ int fs_rmdir(const char *pathname) {
  * @param ppinfo the struct that will be populated
  * @return 0 on success -1 on failure
  */
-int parsePath(char* pathName, struct PPRETDATA *ppinfo){
+int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
     printf("path: %s\n", pathName);
     if(pathName == NULL || ppinfo == NULL) {
         return -1;
@@ -289,16 +340,19 @@ int parsePath(char* pathName, struct PPRETDATA *ppinfo){
         currDirectory = loadDir(cwd, 0);
     }
     char* savePtr = NULL;
-    char* currToken = strtok_r(pathName, "/", &savePtr);
+    char* path = strdup(pathName);
+    char* currToken = strtok_r(path, "/", &savePtr);
     printf("curr token: %s\n", currToken);
     if( currToken == NULL ) {
         if(pathName[0] == '/') {
             memcpy(ppinfo->parent, currDirectory, 7*512);
             ppinfo->lastElementIndex = -2;
             ppinfo->lastElementName = NULL;
+            free(path);
             return 0;
         }
         else {
+            free(path);
             return -1;
         }
     }
