@@ -259,7 +259,7 @@ int fs_setcwd(char *pathname){
 
 int fs_stat(const char *pathname, struct fs_stat *buf) {
     struct PPRETDATA *ppinfo = malloc(sizeof(struct PPRETDATA));
-    ppinfo->parent = malloc(7 * 512); // TODO: why not malloc in pp?
+    ppinfo->parent = malloc(7 * volumeControlBlock->blockSize); // TODO: why not malloc in pp?
     int res = parsePath(pathname, ppinfo);
 
     if (res == -1) {
@@ -278,7 +278,7 @@ int fs_stat(const char *pathname, struct fs_stat *buf) {
     struct DE entry = ppinfo->parent[index];
     buf->st_size = entry.size;
     buf->st_blksize = volumeControlBlock->blockSize;
-    buf->st_blocks = NMOverM(entry.size, 512);
+    buf->st_blocks = NMOverM(entry.size, volumeControlBlock->blockSize);
     buf->st_accesstime = entry.dateLastAccessed;
     buf->st_modtime = entry.dataModified;
     buf->st_createtime = entry.dateLastAccessed;
@@ -300,7 +300,7 @@ int fs_closedir(fdDir *dirp) {
 
 fdDir * fs_opendir(const char *pathname) {
     struct PPRETDATA *ppinfo = malloc(sizeof(struct PPRETDATA));
-    ppinfo->parent = malloc(7 * 512); // TODO: why not malloc in pp?
+    ppinfo->parent = malloc(7 * volumeControlBlock->blockSize); // TODO: why not malloc in pp?
     int res = parsePath(pathname, ppinfo);
 
     if (res == -1) {
@@ -327,12 +327,12 @@ fdDir * fs_opendir(const char *pathname) {
     
     fdDir *fd = malloc(sizeof(fdDir));    
 
-    fd->d_reclen = NMOverM(entry.size, 512);
+    fd->d_reclen = NMOverM(entry.size, volumeControlBlock->blockSize);
     fd->dirEntryPosition = index;
 
     // TODO: why tf was this not typedef?? pick one!!11!
     fd->di = malloc(sizeof(struct fs_diriteminfo));
-    fd->di->d_reclen = NMOverM(entry.size, 512);
+    fd->di->d_reclen = NMOverM(entry.size, volumeControlBlock->blockSize);
     fd->di->fileType = entry.isDirectory;
     strcpy(fd->di->d_name, filename);
     
