@@ -60,5 +60,13 @@ int fileWrite(void* buff, int numberOfBlocks, int location);
  * @return the number of blocks read
  */
 int fileRead(void* buff, int numberOfBlocks, int location);
+
+/*
+ * return free blocks
+ *
+ * @param location the location of the block for the blocks being returned
+ * @return the number of blocks that were returned. -1 on error
+ */
+int returnFreeBlocks(int location);
 #endif
 
