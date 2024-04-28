@@ -188,6 +188,50 @@ int fs_closedir(fdDir *dirp) {
     return 1;
 }
 
+fdDir * fs_opendir(const char *pathname) {
+    struct PPRETDATA *ppinfo = malloc(sizeof(struct PPRETDATA));
+    ppinfo->parent = malloc(7 * 512); // TODO: why not malloc in pp?
+    int res = parsePath(pathname, ppinfo);
+
+    if (res == -1) {
+        fprintf(stderr, "no such file or directory: %s\n", pathname);
+        return NULL;
+    }
+
+    char* filename = extractFileName(pathname);
+    int index = findInDir(ppinfo->parent, filename);
+
+    if (index == -1) {
+        fprintf(stderr, "%s not found\n", filename);
+        return NULL;
+    }
+
+    printf("The file name is %s at index %i\n", filename, index);
+
+    struct DE entry = ppinfo->parent[index];
+    // printDE(ppinfo->parent[2]);
+    if (!entry.isDirectory) {
+        fprintf(stderr, "%s is not a directory\n", pathname);
+        return NULL;
+    }
+    
+    fdDir *fd = malloc(sizeof(fdDir));    
+
+    fd->d_reclen = NMOverM(entry.size, 512);
+    fd->dirEntryPosition = index;
+
+    // TODO: why tf was this not typedef?? pick one!!11!
+    fd->di = malloc(sizeof(struct fs_diriteminfo));
+    fd->di->d_reclen = NMOverM(entry.size, 512);
+    fd->di->fileType = entry.isDirectory;
+    strcpy(fd->di->d_name, filename);
+    
+    free(ppinfo->parent);
+    free(ppinfo);
+    return fd;
+}
+
+
 
 /*
  * method to help with debugging. prints VCB block
