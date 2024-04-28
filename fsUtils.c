@@ -10,6 +10,12 @@ int NMOverM(int n, int m){
     return (n+m-1)/m;
 }
 
+/** Get the file name from a path i.e., last token after slash. */
+char* extractFileName(const char* path) {
+    char* lastSlash = strrchr(path, '/');
+    return lastSlash ? lastSlash+1 : path;
+}
+
 /*
  * find the index of the child
  *
