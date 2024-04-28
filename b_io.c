@@ -21,6 +21,8 @@
 #include <fcntl.h>
 #include "b_io.h"
 #include "fs_control.h"
+#include "fsUtils.h"
+#include "freespace.h"
 
 #define MAXFCBS 20
 #define B_CHUNK_SIZE 512
@@ -28,8 +30,11 @@
 typedef struct b_fcb
 	{
 	struct DE * fileInfo;	//holfd information relevant to file operations
+
 	char * buf;		//holds the open file buffer
 	int index;		//holds the current position in the buffer
+    int blocksRead; //the number of blocks that have been read so far
+    int remainingBytes; // the number of bytes that are left in the buffer
 	int buflen;		//holds how many valid bytes are in the buffer
 	int currentBlock;	//holds position within file in blocks
 	int numBlocks;		//holds the total number of blocks in file
@@ -136,19 +141,47 @@ int b_write (b_io_fd fd, char * buffer, int count)
 //  |             |                                                |        |
 //  | Part1       |  Part 2                                        | Part3  |
 //  +-------------+------------------------------------------------+--------+
-int b_read (b_io_fd fd, char * buffer, int count)
-	{
-
+int b_read (b_io_fd fd, char * buffer, int count) {
 	if (startup == 0) b_init();  //Initialize our system
 
 	// check that fd is between 0 and (MAXFCBS-1)
-	if ((fd < 0) || (fd >= MAXFCBS))
-		{
+	if ((fd < 0) || (fd >= MAXFCBS)) {
 		return (-1); 					//invalid file descriptor
-		}
-
-	return (0);	//Change this
 	}
+    // unused file descriptor
+    if( fcbArray[fd].fileInfo == NULL ) {
+        return -1;
+    }
+
+    int userPosition = 0;
+    int bytesRead = 0;
+    b_fcb fcb = fcbArray[fd];
+
+    // ensure that only as many as there are available are returned to the user
+    if( count > fcb.remainingBytes ) {
+        count = fcb.remainingBytes;
+    }
+    // iterate, so that as per specification the buffer can be copied over in chunks
+    while( count > B_CHUNK_SIZE - fcb.index ) {
+        int size = B_CHUNK_SIZE - fcb.index;
+        memcpy(buffer + userPosition, fcb.buf + fcb.index, size);
+        userPosition += size;
+        fcb.index = 0;
+        int numBlocks = fileRead(fcb.buf, 1, fcb.fileInfo->location + fcb.blocksRead);
+        if( numBlocks != 1 ) {
+            return -1;
+        }
+        fcb.blocksRead += numBlocks;
+        count -= size;
+        bytesRead += size;
+        fcb.remainingBytes -= size;
+    }
+    memcpy(buffer + userPosition, fcb.buf + fcb.index, count);
+    fcb.index += count;
+    fcb.remainingBytes -= count;
+    fcbArray[fd] = fcb;
+    return bytesRead + count;
+}
 
 // Interface to Close the file
 int b_close (b_io_fd fd)
