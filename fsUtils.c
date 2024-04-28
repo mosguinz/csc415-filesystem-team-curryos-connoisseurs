@@ -118,7 +118,7 @@ int fs_mv(const char* startpathname, const char* endpathname) {
     endppinfo->parent = malloc( 7 * 512 );
     int endRes = parsePath(endpathname, endppinfo);
     int endIndex = endppinfo->lastElementIndex;
-    if( endRes == -1 || endIndex == -1 ) {
+    if( endRes == -1 || endIndex == -1 || endppinfo->parent[endIndex].isDirectory == 0) {
         free(startppinfo->parent);
         free(startppinfo);
         free(endppinfo->parent);
@@ -126,12 +126,34 @@ int fs_mv(const char* startpathname, const char* endpathname) {
         return -1;
     }
 
-
-    struct DE* sourceDir = loadDir(startppinfo->parent, startIndex);
     struct DE* endDir = loadDir(endppinfo->parent, endIndex);
 
-    fileWrite(endDir, NMOverM(endDir->size, MINBLOCKSIZE), endDir->location);
+    int emptyIndex = find_vacant_space(endDir);
+    if(emptyIndex == -1) {
+        free(startppinfo->parent);
+        free(startppinfo);
+        free(endppinfo->parent);
+        free(endppinfo);
+        free(endDir);
+        return -1;
+    }
 
+    struct DE* parentDir = startppinfo->parent;
+    struct DE* sourceDir = loadDir(startppinfo->parent, startIndex);
+    endDir[emptyIndex] = parentDir[startIndex];
+    parentDir[startIndex].location = -2l;
+    sourceDir[1] = endDir[0];
+
+    fileWrite(endDir, NMOverM(endDir->size, MINBLOCKSIZE), endDir->location);
+    fileWrite(parentDir, NMOverM(parentDir->size, MINBLOCKSIZE), parentDir->location);
+    fileWrite(sourceDir, NMOverM(sourceDir->size, MINBLOCKSIZE), sourceDir->location);
+
+    free(startppinfo->parent);
+    free(startppinfo);
+    free(endppinfo->parent);
+    free(endppinfo);
+    free(endDir);
+    free(sourceDir);
     return 0;
 }
 
