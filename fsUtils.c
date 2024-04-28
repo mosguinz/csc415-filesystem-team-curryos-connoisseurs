@@ -257,6 +257,35 @@ int fs_setcwd(char *pathname){
     return 0;
 }
 
+int fs_stat(const char *pathname, struct fs_stat *buf) {
+    struct PPRETDATA *ppinfo = malloc(sizeof(struct PPRETDATA));
+    ppinfo->parent = malloc(7 * 512); // TODO: why not malloc in pp?
+    int res = parsePath(pathname, ppinfo);
+
+    if (res == -1) {
+        fprintf(stderr, "no such file or directory: %s\n", pathname);
+        return -1;
+    }
+
+    char* filename = extractFileName(pathname);
+    int index = findInDir(ppinfo->parent, filename);
+    if (index == -1) {
+        fprintf(stderr, "%s not found\n", filename);
+        return -1;
+    }
+
+
+    struct DE entry = ppinfo->parent[index];
+    buf->st_size = entry.size;
+    buf->st_blksize = volumeControlBlock->blockSize;
+    buf->st_blocks = NMOverM(entry.size, 512);
+    buf->st_accesstime = entry.dateLastAccessed;
+    buf->st_modtime = entry.dataModified;
+    buf->st_createtime = entry.dateLastAccessed;
+
+    return index;
+}
+
 int fs_closedir(fdDir *dirp) {
 
     if (dirp == NULL) {
