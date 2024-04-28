@@ -96,7 +96,7 @@ int returnFreeBlocks(int location){
     int i = 0;
     while( fat[currBlockLoc] != 0xFFFFFFFF ) {
         currBlockLoc = fat[currBlockLoc];
-        printf("currBlockLoc: %i\n", currBlockLoc);
+        // printf("currBlockLoc: %i\n", currBlockLoc);
         i++;
     }
     fat[currBlockLoc] = volumeControlBlock->firstBlock;

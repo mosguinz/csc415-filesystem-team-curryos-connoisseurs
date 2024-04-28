@@ -225,23 +225,25 @@ int fs_delete(char* filename){
     if( returnFreeBlocks(cwd[index].location) == -1) {
         return -1;
     }
-    cwd[index].location = 0xFFFFFFFE;
+    cwd[index].location = -2l;
     return 0;
 }
 
 void clearDir(struct DE* dir) {
     int location = dir->location;
+    printf("location in clearDir: %i\n", location);
     int size = NMOverM(dir->size, volumeControlBlock->blockSize);
     for(int i=2; i < DECOUNT; i++) {
-        if(dir[i].isDirectory == 1) {
+        printf("clearDir Loc: %i value of i: %i\n", location, i);
+        if(dir[i].location > 0 && dir[i].isDirectory == 1) {
             struct DE* currDir = loadDir(dir, i);
             clearDir(currDir);
             free(currDir);
         }
-        if( dir[i].location >= 0 ) {
+        if( dir[i].location > 0 && dir[i].isDirectory == 0) {
             returnFreeBlocks(dir[i].location);
+            dir[i].location = (long)-2;
         }
-        dir[i].location = (long)-2;
     }
     returnFreeBlocks(location);
     fileWrite(dir, dir->size, location);
@@ -318,7 +320,6 @@ int parsePath(char* pathName, struct PPRETDATA *ppinfo){
                 memcpy(ppinfo->parent, prevDirectory, 7*512);
                 ppinfo->lastElementIndex = -1;
                 ppinfo->lastElementName = prevToken;
-                printPPInfo(ppinfo);
                 return 0;
             }
             else {
