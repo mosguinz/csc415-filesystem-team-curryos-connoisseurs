@@ -20,16 +20,21 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "b_io.h"
+#include "fs_control.h"
 
 #define MAXFCBS 20
 #define B_CHUNK_SIZE 512
 
 typedef struct b_fcb
 	{
-	/** TODO add al the information you need in the file control block **/
+	struct DE * fileInfo;	//holfd information relevant to file operations
 	char * buf;		//holds the open file buffer
 	int index;		//holds the current position in the buffer
 	int buflen;		//holds how many valid bytes are in the buffer
+	int currentBlock;	//holds position within file in blocks
+	int numBlocks;		//holds the total number of blocks in file
+
+	int activeFlags;	//holds the flags for the opened file
 	} b_fcb;
 	
 b_fcb fcbArray[MAXFCBS];
@@ -53,7 +58,7 @@ b_io_fd b_getFCB ()
 	{
 	for (int i = 0; i < MAXFCBS; i++)
 		{
-		if (fcbArray[i].buff == NULL)
+		if (fcbArray[i].buf == NULL)
 			{
 			return i;		//Not thread safe (But do not worry about it for this assignment)
 			}
@@ -64,13 +69,10 @@ b_io_fd b_getFCB ()
 // Interface to open a buffered file
 // Modification of interface for this assignment, flags match the Linux flags for open
 // O_RDONLY, O_WRONLY, or O_RDWR
-b_io_fd b_open (char * filename, int flags)
-	{
+b_io_fd b_open (char * filename, int flags){
+	int ret;
 	b_io_fd returnFd;
 
-	//*** TODO ***:  Modify to save or set any information needed
-	//
-	//
 		
 	if (startup == 0) b_init();  //Initialize our system
 	
@@ -78,7 +80,7 @@ b_io_fd b_open (char * filename, int flags)
 										// check for error - all used FCB's
 	
 	return (returnFd);						// all set
-	}
+}
 
 
 // Interface to seek function	
