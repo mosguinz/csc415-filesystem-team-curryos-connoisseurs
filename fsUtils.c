@@ -297,7 +297,7 @@ int fs_delete(char* filename){
     if( res == -1 || index == -1 ) {
         return -1;
     }
-    if( returnFreeBlocks(cwd[index].location) == -1) {
+    if( returnFreeBlocks(cwd[index].location) == -1l) {
         return -1;
     }
     cwd[index].location = -2l;
