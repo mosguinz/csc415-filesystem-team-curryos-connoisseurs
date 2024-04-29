@@ -106,19 +106,84 @@ int b_seek (b_io_fd fd, off_t offset, int whence)
 
 
 // Interface to write function
-int b_write (b_io_fd fd, char * buffer, int count)
-	{
+int b_write (b_io_fd fd, char * buffer, int count) {
 	if (startup == 0) b_init();  //Initialize our system
 
 	// check that fd is between 0 and (MAXFCBS-1)
-	if ((fd < 0) || (fd >= MAXFCBS))
-		{
+	if ((fd < 0) || (fd >= MAXFCBS)) {
 		return (-1); 					//invalid file descriptor
-		}
-
-
-	return (0); //Change this
 	}
+
+    // check if there is an active fd
+    if( fcbArray[fd].fileInfo == NULL ) {
+        return -1;
+    }
+
+    // check if there is a valid length
+    if( count < 0 ) {
+        return -1;
+    }
+
+    // check the flag
+    if( fcbArray[fd].activeFlags & O_RDONLY) {
+        printf("b_read: file is read only\n");
+        return -1;
+    }
+
+    b_fcb fcb = fcbArray[fd];
+
+    int remainingSpace = (fcb.fileInfo->size + count) - (fcb.numBlocks * MINBLOCKSIZE);
+    int additionalBlocks = NMOverM(remainingSpace, MINBLOCKSIZE);
+
+    if( additionalBlocks > 0 ) {
+        additionalBlocks = additionalBlocks > fcb.numBlocks ? additionalBlocks : fcb.numBlocks;
+        int newBlocks = getFreeBlocks(additionalBlocks);
+        int lastBlock = fileSeek(fcb.fileInfo->location, fcb.numBlocks - 1);
+        fat[lastBlock] = newBlocks;
+        fcb.numBlocks += additionalBlocks;
+    }
+
+    int bytesInBuff;
+    int part1, part2, part3;
+    int numBlocks;
+    if( fcb.fileInfo->size < 1 ) {
+        fcb.fileInfo->size = 0;
+        bytesInBuff = B_CHUNK_SIZE;
+    }
+    else {
+        bytesInBuff = fcb.buflen - fcb.index;
+    }
+    if( bytesInBuff >= count ) {
+        part1 = count;
+        part2 = 0;
+        part3 = 0;
+    }
+    else {
+        part1 = bytesInBuff;
+        part3 = count - bytesInBuff;
+        numBlocks = part3 / B_CHUNK_SIZE;
+        part2 = numBlocks * B_CHUNK_SIZE;
+        part3 = part3 - part2;
+    }
+    if( part1 > 0 ) {
+        memcpy(fcb.buf + fcb.index, buffer, part1);
+        fileWrite(fcb.buf, 1, fcb.currentBlock);
+        fcb.index += part1;
+    }
+    if( part2 > 0 ) {
+        int blocksWritten = fileWrite(buffer + part1, numBlocks, fcb.currentBlock);
+        fcb.currentBlock = fileSeek(fcb.currentBlock, numBlocks);
+        part2 = blocksWritten * B_CHUNK_SIZE;
+    }
+    if( part3 > 0 ) {
+        fcb.index = 0;
+        memcpy(fcb.buf, buffer + part1 + part2, part3);
+        fcb.currentBlock = fileSeek(fcb.currentBlock, 1);
+        fileWrite(fcb.buf, 1, fcb.currentBlock);
+        fcb.index += part3;
+    }
+	return part1 + part2 + part3;
+}
 
 
 
@@ -183,7 +248,7 @@ int b_read (b_io_fd fd, char * buffer, int count) {
         part3 -= part2;
     }
     if( part1 > 0 ) {
-        memcpy(buffer, fcb.buf, part1);
+        memcpy(buffer, fcb.buf + fcb.index, part1);
     }
     if( part2 > 0 ) {
         int blocksRead = fileRead(buffer + part1, numBlocks, fcb.currentBlock);
