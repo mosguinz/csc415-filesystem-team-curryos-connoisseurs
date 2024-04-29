@@ -109,29 +109,45 @@ b_io_fd b_open (char * filename, int flags){
 
 	// If create flag is set create new file
 	if ( flags && O_CREAT ) {
-		// Populate Directory Entry of new file
-		fileInfo = malloc(sizeof(struct DE));
-		fileLocation = getFreeBlocks(1);	// TODO temporary value
-		fileInfo->location = fileLocation;
-		fileInfo->size = MINBLOCKSIZE;		// TODO temporary value
+		// Populate Directory Entry of new file leave location empty
 		fileInfo->isDirectory = 0;
-		strncpy(fileInfo->name, parsepathinfo->lastElementName, 36);
+		strncpy(fileInfo->name, parsepathinfo->lastElementName, 28);
 		// Date Fields Populated Here
 
 		// Link back to parent directory
 		emptyIndex = find_vacant_space ( parent );	// TODO look for duplicates?
 		parent[emptyIndex] = *fileInfo;
-		strncpy(parent[emptyIndex].name, parsepathinfo->lastElementName, 36);
+		strncpy(parent[emptyIndex].name, parsepathinfo->lastElementName, 28);
 
 		// Write back changes to complete linking
 		parentSize = NMOverM(parent->size, MINBLOCKSIZE);
 		fileWrite(parent, parentSize, parent->location);
+	}else{
+		// File already exists search in parent
+		int i = 0;
+		for ( ; i == -2 || i < (parent->size)/sizeof(struct DE) ; i++) {
+			if ( strcmp(parent[i].name, parsepathinfo->lastElementName) == 0 ){
+				printf("File Found\n");
+				i = -2;
+			}
+		}
+		if ( i == (parent->size)/sizeof(struct DE) ){
+			perror("File not found");
+			return -1;
+		}
 	}
-	// TODO must handle cases where create flag is not set
-
 	
+	// Populate FCB Struct
+	fcbArray[returnFd].fileInfo = fileInfo;
+	fcbArray[returnFd].buf = malloc(MINBLOCKSIZE);
+	fcbArray[returnFd].index = 0;
+	fcbArray[returnFd].blocksRead = 0;
+	fcbArray[returnFd].remainingBytes = 0;
+	fcbArray[returnFd].buflen = 0;
+	fcbArray[returnFd].currentBlock = 0;
+	fcbArray[returnFd].numBlocks = 0;
+	fcbArray[returnFd].activeFlags = flags;
 
-	free(parent);
 	free(parsepathinfo);
 	return (returnFd);
 }
