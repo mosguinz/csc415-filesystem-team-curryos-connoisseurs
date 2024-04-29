@@ -99,7 +99,7 @@ b_io_fd b_open (char * filename, int flags){
 		perror("malloc");
 		return -1;
 	}
-	
+
 	// Parse through input string and retrieve parent structure and file name
 	if ( parsePath(filename, parsepathinfo) == -1 ) {
 		perror("Parse Path");
@@ -111,6 +111,8 @@ b_io_fd b_open (char * filename, int flags){
 	if ( flags && O_CREAT ) {
 		// Populate Directory Entry of new file leave location empty
 		fileInfo->isDirectory = 0;
+        fileInfo->size = 0;
+        fileInfo->location = -1;
 		strncpy(fileInfo->name, parsepathinfo->lastElementName, 28);
 		// Date Fields Populated Here
 
@@ -136,7 +138,7 @@ b_io_fd b_open (char * filename, int flags){
 			return -1;
 		}
 	}
-	
+
 	// Populate FCB Struct
 	fcbArray[returnFd].fileInfo = fileInfo;
 	fcbArray[returnFd].buf = malloc(MINBLOCKSIZE);
