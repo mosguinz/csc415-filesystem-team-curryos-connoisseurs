@@ -70,16 +70,41 @@ b_io_fd b_getFCB ()
 // Modification of interface for this assignment, flags match the Linux flags for open
 // O_RDONLY, O_WRONLY, or O_RDWR
 b_io_fd b_open (char * filename, int flags){
-	int ret;
-	b_io_fd returnFd;
+	int ret;				// Used for error handling
+	b_io_fd returnFd;			// File Descriptor
+	struct PRETDATA * parsepathinfo;	// Structure returned from parse path
+	struct DE * parent;			// Track parent directory entry to write back to
+	struct DE * newFile;			// Used in case we create a new file
 
-		
-	if (startup == 0) b_init();  //Initialize our system
+	if (startup == 0) b_init();  		//Initialize our system
+	returnFd = b_getFCB();			// get our own file descriptor
+	if ( returnFd == -2 ){
+		perror("getFCB");
+		return returnFd;
+	}
+
+	// Prepare structures for parse path
+	parsepathinfo = malloc(sizeof(struct PPRETDATA));
+	parsepathinfo->parent = malloc(7*MINBLOCKSIZE);
+	newFile = malloc(MINBLOCKSIZE);
+	if ( !parsepathinfo || !newFile ) { // TODO separate malloc checks and free if needed
+		perror("malloc");
+		return -1;
+	}
+
+	if ( parsePath(filename, parsepathinfo) == -1 ) {
+		perror("Parse Path");
+		free(parsepathinfo->parent);
+		free(parsepathinfo);
+		return -1;
+	}
+
+	printf("%s\n", parsepathinfo->lastElementName);
+
 	
-	returnFd = b_getFCB();				// get our own file descriptor
-										// check for error - all used FCB's
-	
-	return (returnFd);						// all set
+	free(parsepathinfo->parent);
+	free(parsepathinfo);
+	return (returnFd);
 }
 
 
