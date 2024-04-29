@@ -157,34 +157,10 @@ int b_read (b_io_fd fd, char * buffer, int count) {
         return -1;
     }
 
-    // int userPosition = 0;
-    // int bytesRead = 0;
-    // b_fcb fcb = fcbArray[fd];
-
-    // // ensure that only as many as there are available are returned to the user
-    // if( count > fcb.remainingBytes ) {
-    //     count = fcb.remainingBytes;
-    // }
-    // // iterate, so that as per specification the buffer can be copied over in chunks
-    // while( count > B_CHUNK_SIZE - fcb.index ) {
-    //     int size = B_CHUNK_SIZE - fcb.index;
-    //     memcpy(buffer + userPosition, fcb.buf + fcb.index, size);
-    //     userPosition += size;
-    //     fcb.index = 0;
-    //     int numBlocks = fileRead(fcb.buf, 1, fcb.fileInfo->location + fcb.blocksRead);
-    //     if( numBlocks != 1 ) {
-    //         return -1;
-    //     }
-    //     fcb.blocksRead += numBlocks;
-    //     count -= size;
-    //     bytesRead += size;
-    //     fcb.remainingBytes -= size;
-    // }
-    // memcpy(buffer + userPosition, fcb.buf + fcb.index, count);
-    // fcb.index += count;
-    // fcb.remainingBytes -= count;
-    // fcbArray[fd] = fcb;
-    // return bytesRead + count;
+    if( fcbArray[fd].activeFlags & O_WRONLY) {
+        printf("b_read: file is write only\n");
+        return -1;
+    }
 
     int part1, part2, part3;
     int numBlocks;
