@@ -89,7 +89,7 @@ int fs_isFile(char * filename){
 void printCurrDir() {
     struct DE* searchDirectory = loadDir(cwd, 0);
     for( int i = 0; i < DECOUNT; i++) {
-        if(searchDirectory[i].location >= 0 ) {
+        if(searchDirectory[i].location != -2l ) {
             printf("name of directory: %s\n", searchDirectory[i].name);
         }
     }
@@ -295,10 +295,16 @@ int fs_delete(char* filename){
     int res = parsePath(filename, ppinfo);
     int index = ppinfo->lastElementIndex;
     if( res == -1 || index == -1 ) {
+        free(ppinfo->parent);
+        free(ppinfo);
         return -1;
     }
-    if( returnFreeBlocks(cwd[index].location) == -1l) {
-        return -1;
+    if( cwd[index].size > 0 ) {
+        if( returnFreeBlocks(cwd[index].location) == -1) {
+            free(ppinfo->parent);
+            free(ppinfo);
+            return -1;
+        }
     }
     cwd[index].location = -2l;
     return 0;
@@ -322,6 +328,15 @@ void clearDir(struct DE* dir) {
     fileWrite(dir, size, location);
 }
 
+int isEmpty(struct DE* dir) {
+    for( int i = 2; i < DECOUNT; i++ ) {
+        if(dir[i].location > 0) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 int fs_rmdir(const char *pathname) {
     struct PPRETDATA *ppinfo = malloc( sizeof(struct PPRETDATA));
     ppinfo->parent = malloc( 7 * 512 );
@@ -331,7 +346,13 @@ int fs_rmdir(const char *pathname) {
         return -1;
     }
     struct DE* currDir = loadDir(ppinfo->parent, index);;
-    clearDir(currDir);
+    // clearDir(currDir);
+    if(isEmpty(currDir) == 0) {
+        free(currDir);
+        free(ppinfo->parent);
+        free(ppinfo);
+        return -1;
+    }
     ppinfo->parent[index].location = (long)-2;
     int size = NMOverM(ppinfo->parent->size, volumeControlBlock->blockSize);
     int location = ppinfo->parent->location;
