@@ -76,10 +76,13 @@ b_io_fd b_getFCB ()
 // O_RDONLY, O_WRONLY, or O_RDWR
 b_io_fd b_open (char * filename, int flags){
 	int ret;				// Used for error handling
+	int fileLocation;			// Used for storing physical location of file
+	int emptyIndex;				// Track first unused entry in parent
+	int parentSize;				// Compute size of parent directory for linking
 	b_io_fd returnFd;			// File Descriptor
-	struct PRETDATA * parsepathinfo;	// Structure returned from parse path
+	struct PPRETDATA * parsepathinfo;	// Structure returned from parse path
 	struct DE * parent;			// Track parent directory entry to write back to
-	struct DE * newFile;			// Used in case we create a new file
+	struct DE * fileInfo;			// Used in case we create a new file
 
 	if (startup == 0) b_init();  		//Initialize our system
 	returnFd = b_getFCB();			// get our own file descriptor
@@ -91,23 +94,44 @@ b_io_fd b_open (char * filename, int flags){
 	// Prepare structures for parse path
 	parsepathinfo = malloc(sizeof(struct PPRETDATA));
 	parsepathinfo->parent = malloc(7*MINBLOCKSIZE);
-	newFile = malloc(MINBLOCKSIZE);
-	if ( !parsepathinfo || !newFile ) { // TODO separate malloc checks and free if needed
+	fileInfo = malloc(MINBLOCKSIZE);
+	if ( !parsepathinfo || !fileInfo ) { // TODO separate malloc checks and free if needed
 		perror("malloc");
 		return -1;
 	}
-
+	
+	// Parse through input string and retrieve parent structure and file name
 	if ( parsePath(filename, parsepathinfo) == -1 ) {
 		perror("Parse Path");
-		free(parsepathinfo->parent);
-		free(parsepathinfo);
 		return -1;
 	}
+	parent = parsepathinfo -> parent;
 
-	printf("%s\n", parsepathinfo->lastElementName);
+	// If create flag is set create new file
+	if ( flags && O_CREAT ) {
+		// Populate Directory Entry of new file
+		fileInfo = malloc(sizeof(struct DE));
+		fileLocation = getFreeBlocks(1);	// TODO temporary value
+		fileInfo->location = fileLocation;
+		fileInfo->size = MINBLOCKSIZE;		// TODO temporary value
+		fileInfo->isDirectory = 0;
+		strncpy(fileInfo->name, parsepathinfo->lastElementName, 36);
+		// Date Fields Populated Here
+
+		// Link back to parent directory
+		emptyIndex = find_vacant_space ( parent );	// TODO look for duplicates?
+		parent[emptyIndex] = *fileInfo;
+		strncpy(parent[emptyIndex].name, parsepathinfo->lastElementName, 36);
+
+		// Write back changes to complete linking
+		parentSize = NMOverM(parent->size, MINBLOCKSIZE);
+		fileWrite(parent, parentSize, parent->location);
+	}
+	// TODO must handle cases where create flag is not set
 
 	
-	free(parsepathinfo->parent);
+
+	free(parent);
 	free(parsepathinfo);
 	return (returnFd);
 }
