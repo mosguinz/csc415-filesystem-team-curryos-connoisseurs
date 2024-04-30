@@ -27,20 +27,20 @@
 #define MAXFCBS 20
 #define B_CHUNK_SIZE 512
 
-typedef struct b_fcb
-	{
-	struct DE * fileInfo;	//holfd information relevant to file operations
-
-	char * buf;		//holds the open file buffer
-	int index;		//holds the current position in the buffer
-    int blocksRead; //the number of blocks that have been read so far
-    int remainingBytes; // the number of bytes that are left in the buffer
-	int buflen;		//holds how many valid bytes are in the buffer
-	int currentBlock;	//holds position within file in blocks
-	int numBlocks;		//holds the total number of blocks in file
-
-	int activeFlags;	//holds the flags for the opened file
-	} b_fcb;
+// typedef struct b_fcb
+// 	{
+// 	struct DE * fileInfo;	//holfd information relevant to file operations
+//
+// 	char * buf;		//holds the open file buffer
+// 	int index;		//holds the current position in the buffer
+//     int blocksRead; //the number of blocks that have been read so far
+//     int remainingBytes; // the number of bytes that are left in the buffer
+// 	int buflen;		//holds how many valid bytes are in the buffer
+// 	int currentBlock;	//holds position within file in blocks
+// 	int numBlocks;		//holds the total number of blocks in file
+//
+// 	int activeFlags;	//holds the flags for the opened file
+// 	} b_fcb;
 
 b_fcb fcbArray[MAXFCBS];
 
@@ -199,8 +199,11 @@ int b_write (b_io_fd fd, char * buffer, int count) {
 
     b_fcb fcb = fcbArray[fd];
 
+    printf("reached here1\n");
+
     int remainingSpace = (fcb.fileInfo->size + count) - (fcb.numBlocks * MINBLOCKSIZE);
     int additionalBlocks = NMOverM(remainingSpace, MINBLOCKSIZE);
+    printf("reached here2\n");
 
     if( additionalBlocks > 0 ) {
         additionalBlocks = additionalBlocks > fcb.numBlocks ? additionalBlocks : fcb.numBlocks;
@@ -208,7 +211,9 @@ int b_write (b_io_fd fd, char * buffer, int count) {
         int lastBlock = fileSeek(fcb.fileInfo->location, fcb.numBlocks - 1);
         fat[lastBlock] = newBlocks;
         fcb.numBlocks += additionalBlocks;
+        printf("numblocks: %i\n", fcb.numBlocks);
     }
+    printf("reached here3\n");
 
     int bytesInBuff;
     int part1, part2, part3;
@@ -216,6 +221,7 @@ int b_write (b_io_fd fd, char * buffer, int count) {
     if( fcb.fileInfo->size < 1 ) {
         fcb.fileInfo->size = 0;
         bytesInBuff = B_CHUNK_SIZE;
+        fcb.buflen = B_CHUNK_SIZE;
     }
     else {
         bytesInBuff = fcb.buflen - fcb.index;
@@ -232,6 +238,10 @@ int b_write (b_io_fd fd, char * buffer, int count) {
         part2 = numBlocks * B_CHUNK_SIZE;
         part3 = part3 - part2;
     }
+    printf("reached here4\n");
+    printf("p1: %i\n", part1);
+    printf("p2: %i\n", part2);
+    printf("p3: %i\n", part3);
     if( part1 > 0 ) {
         memcpy(fcb.buf + fcb.index, buffer, part1);
         fileWrite(fcb.buf, 1, fcb.currentBlock);
@@ -249,6 +259,7 @@ int b_write (b_io_fd fd, char * buffer, int count) {
         fileWrite(fcb.buf, 1, fcb.currentBlock);
         fcb.index += part3;
     }
+    printf("reached here5\n");
 	return part1 + part2 + part3;
 }
 
