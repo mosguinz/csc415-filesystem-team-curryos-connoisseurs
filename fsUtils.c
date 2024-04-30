@@ -299,7 +299,7 @@ void printFCB(b_fcb fcb){
     printf ("| remainingBytes        | %-22i|\n", fcb.remainingBytes);
     printf ("|-----------------------------------------------|\n");
     printf("the buffer:\n%s\n", fcb.buf);
-    printDE(fcb.fileInfo);
+    // printDE(fcb.fileInfo);
 }
 
 //removes a file

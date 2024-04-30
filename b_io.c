@@ -199,22 +199,6 @@ int b_write (b_io_fd fd, char * buffer, int count) {
 
     b_fcb fcb = fcbArray[fd];
 
-    printf("reached here1\n");
-
-    int remainingSpace = (fcb.fileInfo->size + count) - (fcb.numBlocks * MINBLOCKSIZE);
-    int additionalBlocks = NMOverM(remainingSpace, MINBLOCKSIZE);
-    printf("reached here2\n");
-
-    if( additionalBlocks > 0 ) {
-        additionalBlocks = additionalBlocks > fcb.numBlocks ? additionalBlocks : fcb.numBlocks;
-        int newBlocks = getFreeBlocks(additionalBlocks);
-        int lastBlock = fileSeek(fcb.fileInfo->location, fcb.numBlocks - 1);
-        fat[lastBlock] = newBlocks;
-        fcb.numBlocks += additionalBlocks;
-        printf("numblocks: %i\n", fcb.numBlocks);
-    }
-    printf("reached here3\n");
-
     int bytesInBuff;
     int part1, part2, part3;
     int numBlocks;
@@ -226,6 +210,28 @@ int b_write (b_io_fd fd, char * buffer, int count) {
     else {
         bytesInBuff = fcb.buflen - fcb.index;
     }
+
+    int remainingSpace = (fcb.fileInfo->size + count) - (fcb.numBlocks * MINBLOCKSIZE);
+    int additionalBlocks = NMOverM(remainingSpace, MINBLOCKSIZE);
+    printf("additionalBlocks: %i\n", additionalBlocks);
+
+    if( additionalBlocks > 0 ) {
+        additionalBlocks = additionalBlocks > fcb.numBlocks ? additionalBlocks : fcb.numBlocks;
+        int newBlocks = getFreeBlocks(additionalBlocks);
+        int lastBlock = fileSeek(fcb.fileInfo->location, fcb.numBlocks - 1);
+        if(fcb.fileInfo->location == -1) {
+            fcb.currentBlock = newBlocks;
+            fcb.fileInfo->location = newBlocks;
+        }
+        else {
+            fat[lastBlock] = newBlocks;
+        }
+        fcb.numBlocks += additionalBlocks;
+        printf("Added in numblocks: %i\n", fcb.numBlocks);
+    }
+
+    printFCB(fcb);
+
     if( bytesInBuff >= count ) {
         part1 = count;
         part2 = 0;
@@ -238,7 +244,6 @@ int b_write (b_io_fd fd, char * buffer, int count) {
         part2 = numBlocks * B_CHUNK_SIZE;
         part3 = part3 - part2;
     }
-    printf("reached here4\n");
     printf("p1: %i\n", part1);
     printf("p2: %i\n", part2);
     printf("p3: %i\n", part3);
@@ -259,7 +264,8 @@ int b_write (b_io_fd fd, char * buffer, int count) {
         fileWrite(fcb.buf, 1, fcb.currentBlock);
         fcb.index += part3;
     }
-    printf("reached here5\n");
+    fcb.fileInfo->size += part1 + part2 + part3;
+    fcbArray[fd] = fcb;
 	return part1 + part2 + part3;
 }
 
@@ -308,6 +314,7 @@ int b_read (b_io_fd fd, char * buffer, int count) {
     int part1, part2, part3;
     int numBlocks;
     b_fcb fcb = fcbArray[fd];
+    printFCB(fcb);
     int bytesInBuff = fcb.buflen - fcb.index;
 
     if( count > fcb.remainingBytes ) {

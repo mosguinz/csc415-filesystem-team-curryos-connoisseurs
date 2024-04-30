@@ -1,6 +1,7 @@
 #ifndef _FSUTILS
 #define _FSUTILS
 #include "fs_control.h"
+#include "b_io.h"
 #include <stdlib.h>
 /*
  * just for quick artithmetic to not have human error
@@ -37,4 +38,5 @@ int find_vacant_space ( struct DE * directory );
  * method to help with debugging. prints VCB block
  */
 void printVCB();
+void printFCB(b_fcb fcb);
 #endif
