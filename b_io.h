@@ -27,6 +27,7 @@ int b_close (b_io_fd fd);
 typedef struct b_fcb
 	{
 	struct DE * fileInfo;	//holfd information relevant to file operations
+	struct DE * parent;	//holfd information relevant to file operations
 
 	char * buf;		//holds the open file buffer
 	int index;		//holds the current position in the buffer
@@ -35,6 +36,7 @@ typedef struct b_fcb
 	int buflen;		//holds how many valid bytes are in the buffer
 	int currentBlock;	//holds position within file in blocks
 	int numBlocks;		//holds the total number of blocks in file
+    int fileIndex;      //holds the index in the parent of the file
 
 	int activeFlags;	//holds the flags for the opened file
 	} b_fcb;

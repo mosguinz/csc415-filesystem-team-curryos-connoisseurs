@@ -39,4 +39,6 @@ int find_vacant_space ( struct DE * directory );
  */
 void printVCB();
 void printFCB(b_fcb fcb);
+void printDE(struct DE* directory);
+struct DE* loadDir(struct DE* searchDirectory, int index);
 #endif
