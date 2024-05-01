@@ -69,5 +69,6 @@ int createDirectory(int numberOfEntries, struct DE *parent)
 
 	// Write newly created directory to disk
 	int blocksWritten = fileWrite(buffer, blockCount, blocksRequested);
+    free(buffer);
 	return blocksRequested;
 }

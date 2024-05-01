@@ -54,6 +54,7 @@ struct DE* loadDir(struct DE* searchDirectory, int index) {
     struct DE* directories = (struct DE*)malloc(7 * 512);
     int res = fileRead(directories, size, loc);
     if( res == -1 ) {
+        free(directories);
         return NULL;
     }
     return directories;
@@ -143,6 +144,7 @@ int fs_mv(const char* startpathname, const char* endpathname) {
     endDir[emptyIndex] = parentDir[startIndex];
     parentDir[startIndex].location = -2l;
     sourceDir[1] = endDir[0];
+    strncpy(sourceDir[1].name, "..", 28);
 
     fileWrite(endDir, NMOverM(endDir->size, MINBLOCKSIZE), endDir->location);
     fileWrite(parentDir, NMOverM(parentDir->size, MINBLOCKSIZE), parentDir->location);
@@ -221,10 +223,14 @@ int fs_setcwd(char *pathname){
     if( ppinfo->lastElementIndex == -2 ) {
         cwd = loadDir(root, 0);
         strcpy(cwdPathName, "/");
+        free(ppinfo->parent);
+        free(ppinfo);
         return 0;
     }
     if( res == -1 || ppinfo->lastElementIndex == -1){
         printf("fail 1\n");
+        free(ppinfo->parent);
+        free(ppinfo);
         return -1;
     }
     struct DE* dir = malloc(512 * 7 );
@@ -388,7 +394,7 @@ int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
     if(pathName == NULL || ppinfo == NULL) {
         return -1;
     }
-    struct DE* currDirectory = malloc(7*512);
+    struct DE* currDirectory;
     if(pathName[0] == '/'){
         currDirectory = loadDir(root, 0);
     }
@@ -405,10 +411,12 @@ int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
             ppinfo->lastElementIndex = -2;
             ppinfo->lastElementName = NULL;
             free(path);
+            free(currDirectory);
             return 0;
         }
         else {
             free(path);
+            free(currDirectory);
             return -1;
         }
     }
