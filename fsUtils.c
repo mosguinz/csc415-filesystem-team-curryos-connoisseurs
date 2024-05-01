@@ -329,6 +329,8 @@ fdDir * fs_opendir(const char *pathname) {
 
     fd->d_reclen = NMOverM(entry.size, volumeControlBlock->blockSize);
     fd->dirEntryPosition = index;
+    fd->dirEntryLocation = entry.location;
+    fd->index = 0;
 
     // TODO: why tf was this not typedef?? pick one!!11!
     fd->di = malloc(sizeof(struct fs_diriteminfo));
