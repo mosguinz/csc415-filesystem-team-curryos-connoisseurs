@@ -294,11 +294,10 @@ void printFCB(b_fcb fcb){
     printf ("| index                 | %-22i|\n", fcb.index);
     printf ("| buflen                | %-22i|\n", fcb.buflen);
     printf ("| numBlocks             | %-22i|\n", fcb.numBlocks);
-    printf ("| blocksRead            | %-22i|\n", fcb.blocksRead);
     printf ("| currentBlock          | %-22i|\n", fcb.currentBlock);
     printf ("| remainingBytes        | %-22i|\n", fcb.remainingBytes);
     printf ("|-----------------------------------------------|\n");
-    printf("the buffer:\n%s\n", fcb.buf);
+    // printf("the buffer:\n%s\n", fcb.buf);
     // printDE(fcb.fileInfo);
 }
 

@@ -117,7 +117,6 @@ b_io_fd b_open (char * filename, int flags){
         fcbArray[returnFd].buflen = B_CHUNK_SIZE;
         fcbArray[returnFd].numBlocks = 0;
         fcbArray[returnFd].currentBlock = -1;
-        fcbArray[returnFd].blocksRead = 0;
         fcbArray[returnFd].activeFlags = flags;
         fcbArray[returnFd].remainingBytes = 0;
         b_fcb fcb = fcbArray[returnFd];
@@ -145,28 +144,15 @@ b_io_fd b_open (char * filename, int flags){
         fcbArray[returnFd].numBlocks = numBlocks;
         fcbArray[returnFd].fileInfo = fileInfo;
         fcbArray[returnFd].buf = malloc(B_CHUNK_SIZE);
-        fcbArray[returnFd].blocksRead = 0;
+        fcbArray[returnFd].buflen = B_CHUNK_SIZE;
         fcbArray[returnFd].remainingBytes = file.size;
         fcbArray[returnFd].currentBlock = file.location;
         fcbArray[returnFd].parent = parent;
         fcbArray[returnFd].activeFlags = flags;
         free(parsepathinfo);
+        printf("finished opening fd\n");
         return returnFd;
     }
-
-//  // Populate FCB Struct
-//    fcbArray[returnFd].fileInfo = fileInfo;
-//      fcbArray[returnFd].buf = malloc(MINBLOCKSIZE);
-//      fcbArray[returnFd].index = 0;
-//      fcbArray[returnFd].blocksRead = 0;
-//      fcbArray[returnFd].remainingBytes = 0;
-//      fcbArray[returnFd].buflen = 0;
-//      fcbArray[returnFd].currentBlock = 0;
-//      fcbArray[returnFd].numBlocks = 0;
-//      fcbArray[returnFd].activeFlags = flags;
-//
-//      free(parsepathinfo);
-//      return (returnFd);
 }
 
 
@@ -326,7 +312,16 @@ int b_read (b_io_fd fd, char * buffer, int count) {
     int part1, part2, part3;
     int numBlocks;
     b_fcb fcb = fcbArray[fd];
-    int bytesInBuff = fcb.buflen - fcb.index;
+    int bytesInBuff;
+    if(fcb.remainingBytes == fcb.fileInfo->size) {
+        bytesInBuff = B_CHUNK_SIZE;
+        fcb.buflen = B_CHUNK_SIZE;
+        fcb.index = 0;
+        fileRead(fcb.buf, 1, fcb.currentBlock);
+    }
+    else {
+        bytesInBuff = fcb.buflen - fcb.index;
+    }
 
     if( count > fcb.remainingBytes ) {
         count = fcb.remainingBytes;
@@ -345,6 +340,7 @@ int b_read (b_io_fd fd, char * buffer, int count) {
     }
     if( part1 > 0 ) {
         memcpy(buffer, fcb.buf + fcb.index, part1);
+        fcb.index += part1;
     }
     if( part2 > 0 ) {
         int blocksRead = fileRead(buffer + part1, numBlocks, fcb.currentBlock);
@@ -352,8 +348,8 @@ int b_read (b_io_fd fd, char * buffer, int count) {
         part2 = blocksRead * B_CHUNK_SIZE;
     }
     if( part3 > 0 ) {
-        int blocksRead = fileRead(fcb.buf, 1, fcb.currentBlock);
         fcb.currentBlock = fileSeek(fcb.currentBlock, 1);
+        int blocksRead = fileRead(fcb.buf, 1, fcb.currentBlock);
         fcb.index = 0;
         fcb.buflen = blocksRead * B_CHUNK_SIZE;
         if( fcb.buflen < part3 ) {

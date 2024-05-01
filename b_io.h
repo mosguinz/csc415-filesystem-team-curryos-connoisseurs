@@ -31,7 +31,6 @@ typedef struct b_fcb
 
 	char * buf;		//holds the open file buffer
 	int index;		//holds the current position in the buffer
-    int blocksRead; //the number of blocks that have been read so far
     int remainingBytes; // the number of bytes that are left in the buffer
 	int buflen;		//holds how many valid bytes are in the buffer
 	int currentBlock;	//holds position within file in blocks
