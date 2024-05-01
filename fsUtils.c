@@ -326,6 +326,10 @@ int fs_delete(char* filename){
         }
     }
     cwd[index].location = -2l;
+    int dirSize = NMOverM(cwd[0].size, MINBLOCKSIZE);
+    fileWrite(cwd, dirSize, cwd[0].location);
+    free(ppinfo->parent);
+    free(ppinfo);
     return 0;
 }
 
