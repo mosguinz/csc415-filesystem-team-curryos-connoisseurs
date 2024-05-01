@@ -43,7 +43,6 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
     fat = (int *) malloc(blocksNeeded * blockSize );
 	volumeControlBlock = (struct VCB *) malloc(MINBLOCKSIZE);
 	root = (struct DE *) malloc(7 * MINBLOCKSIZE);
-	cwd = (struct DE *) malloc(7 * MINBLOCKSIZE);
 	cwdPathName = (char *) malloc(36);
 
 	printf ("Initializing File System with %ld blocks \
@@ -88,6 +87,11 @@ void exitFileSystem (){
 	fileWrite(fat,
 		MINBLOCKSIZE * volumeControlBlock -> freeSpaceSize,
 		volumeControlBlock -> freeSpaceLocation);
+    free(fat);
+    free(volumeControlBlock);
+    free(root);
+    free(cwdPathName);
+    free(cwd);
 	printf ("System exiting\n");
 }
 

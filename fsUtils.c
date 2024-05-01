@@ -62,6 +62,7 @@ struct DE* loadDir(struct DE* searchDirectory, int index) {
     struct DE* directories = (struct DE*)malloc(7 * 512);
     int res = fileRead(directories, size, loc);
     if( res == -1 ) {
+        free(directories);
         return NULL;
     }
     return directories;
@@ -97,7 +98,7 @@ int fs_isFile(char * filename){
 void printCurrDir() {
     struct DE* searchDirectory = loadDir(cwd, 0);
     for( int i = 0; i < DECOUNT; i++) {
-        if(searchDirectory[i].location >= 0 ) {
+        if(searchDirectory[i].location != -2l ) {
             printf("name of directory: %s\n", searchDirectory[i].name);
         }
     }
@@ -151,6 +152,7 @@ int fs_mv(const char* startpathname, const char* endpathname) {
     endDir[emptyIndex] = parentDir[startIndex];
     parentDir[startIndex].location = -2l;
     sourceDir[1] = endDir[0];
+    strncpy(sourceDir[1].name, "..", 28);
 
     fileWrite(endDir, NMOverM(endDir->size, MINBLOCKSIZE), endDir->location);
     fileWrite(parentDir, NMOverM(parentDir->size, MINBLOCKSIZE), parentDir->location);
@@ -229,10 +231,14 @@ int fs_setcwd(char *pathname){
     if( ppinfo->lastElementIndex == -2 ) {
         cwd = loadDir(root, 0);
         strcpy(cwdPathName, "/");
+        free(ppinfo->parent);
+        free(ppinfo);
         return 0;
     }
     if( res == -1 || ppinfo->lastElementIndex == -1){
         printf("fail 1\n");
+        free(ppinfo->parent);
+        free(ppinfo);
         return -1;
     }
     struct DE* dir = malloc(512 * 7 );
@@ -409,6 +415,19 @@ void printPPInfo(struct PPRETDATA * res) {
     printDE(res->parent);
 }
 
+void printFCB(b_fcb fcb){
+    printf ("|--------------------- FCB ---------------------|\n");
+    printf ("|------- Variable ------|-------- Value --------|\n");
+    printf ("| index                 | %-22i|\n", fcb.index);
+    printf ("| buflen                | %-22i|\n", fcb.buflen);
+    printf ("| numBlocks             | %-22i|\n", fcb.numBlocks);
+    printf ("| currentBlock          | %-22i|\n", fcb.currentBlock);
+    printf ("| remainingBytes        | %-22i|\n", fcb.remainingBytes);
+    printf ("|-----------------------------------------------|\n");
+    // printf("the buffer:\n%s\n", fcb.buf);
+    // printDE(fcb.fileInfo);
+}
+
 //removes a file
 int fs_delete(char* filename){
     struct PPRETDATA *ppinfo = malloc( sizeof(struct PPRETDATA));
@@ -416,12 +435,22 @@ int fs_delete(char* filename){
     int res = parsePath(filename, ppinfo);
     int index = ppinfo->lastElementIndex;
     if( res == -1 || index == -1 ) {
+        free(ppinfo->parent);
+        free(ppinfo);
         return -1;
     }
-    if( returnFreeBlocks(cwd[index].location) == -1) {
-        return -1;
+    if( cwd[index].size > 0 ) {
+        if( returnFreeBlocks(cwd[index].location) == -1) {
+            free(ppinfo->parent);
+            free(ppinfo);
+            return -1;
+        }
     }
     cwd[index].location = -2l;
+    int dirSize = NMOverM(cwd[0].size, MINBLOCKSIZE);
+    fileWrite(cwd, dirSize, cwd[0].location);
+    free(ppinfo->parent);
+    free(ppinfo);
     return 0;
 }
 
@@ -443,6 +472,15 @@ void clearDir(struct DE* dir) {
     fileWrite(dir, size, location);
 }
 
+int isEmpty(struct DE* dir) {
+    for( int i = 2; i < DECOUNT; i++ ) {
+        if(dir[i].location > 0) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 int fs_rmdir(const char *pathname) {
     struct PPRETDATA *ppinfo = malloc( sizeof(struct PPRETDATA));
     ppinfo->parent = malloc( 7 * 512 );
@@ -452,7 +490,13 @@ int fs_rmdir(const char *pathname) {
         return -1;
     }
     struct DE* currDir = loadDir(ppinfo->parent, index);;
-    clearDir(currDir);
+    // clearDir(currDir);
+    if(isEmpty(currDir) == 0) {
+        free(currDir);
+        free(ppinfo->parent);
+        free(ppinfo);
+        return -1;
+    }
     ppinfo->parent[index].location = (long)-2;
     int size = NMOverM(ppinfo->parent->size, volumeControlBlock->blockSize);
     int location = ppinfo->parent->location;
@@ -475,7 +519,7 @@ int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
     if(pathName == NULL || ppinfo == NULL) {
         return -1;
     }
-    struct DE* currDirectory = malloc(7*512);
+    struct DE* currDirectory;
     if(pathName[0] == '/'){
         currDirectory = loadDir(root, 0);
     }
@@ -492,10 +536,12 @@ int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
             ppinfo->lastElementIndex = -2;
             ppinfo->lastElementName = NULL;
             free(path);
+            free(currDirectory);
             return 0;
         }
         else {
             free(path);
+            free(currDirectory);
             return -1;
         }
     }
