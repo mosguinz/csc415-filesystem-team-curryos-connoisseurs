@@ -73,6 +73,11 @@ int fs_isDir(char * pathname){
     struct PPRETDATA *ppinfo = malloc(sizeof(struct PPRETDATA));
     ppinfo->parent = malloc(7 * 512);
     int res = parsePath(pathname, ppinfo);
+
+    if (res == -1 || ppinfo->lastElementIndex < 0) {
+        return 0;
+    }
+
     struct DE* dir = loadDir(ppinfo->parent, ppinfo->lastElementIndex);
     int returnStatement = dir->isDirectory;
     free(ppinfo->parent);
@@ -87,12 +92,14 @@ int fs_isFile(char * filename){
     struct DE* dir = loadDir(cwd, index);
     int returnStatement = dir->isDirectory;
     free(dir);
-    if( returnStatement == 1 ) {
-        return 0;
-    } else if( returnStatement == 0 ){
-        return 1;
-    }
-    return -1;
+    return returnStatement;
+    // TODO: Remove this once DE.isDirectory is flipped.
+    // if( returnStatement == 1 ) {
+    //     return 0;
+    // } else if( returnStatement == 0 ){
+    //     return 1;
+    // }
+    // return -1;
 }
 
 void printCurrDir() {
@@ -293,6 +300,7 @@ int fs_stat(const char *pathname, struct fs_stat *buf) {
     struct PPRETDATA *ppinfo = malloc(sizeof(struct PPRETDATA));
     ppinfo->parent = malloc(7 * volumeControlBlock->blockSize); // TODO: why not malloc in pp?
     int res = parsePath(pathname, ppinfo);
+    printf("in fs_stat\n");
 
     if (res == -1) {
         fprintf(stderr, "no such file or directory: %s\n", pathname);
@@ -305,7 +313,6 @@ int fs_stat(const char *pathname, struct fs_stat *buf) {
         fprintf(stderr, "%s not found\n", filename);
         return -1;
     }
-
 
     struct DE entry = ppinfo->parent[index];
     buf->st_size = entry.size;
@@ -334,6 +341,8 @@ fdDir * fs_opendir(const char *pathname) {
     struct PPRETDATA *ppinfo = malloc(sizeof(struct PPRETDATA));
     ppinfo->parent = malloc(7 * volumeControlBlock->blockSize); // TODO: why not malloc in pp?
     int res = parsePath(pathname, ppinfo);
+
+    printf("in opendir\n");
 
     if (res == -1) {
         fprintf(stderr, "no such file or directory: %s\n", pathname);
