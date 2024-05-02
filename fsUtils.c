@@ -274,7 +274,6 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp){
     return NULL;
   }
   if (dirp->index == DECOUNT-1 || entry.location == -2l) {
-    printf("Exiting, index is %i. Entry location at %d\n", dirp->index, entry.location);
     free(entries);
     return NULL;
   }
@@ -292,7 +291,6 @@ int fs_stat(const char *pathname, struct fs_stat *buf) {
     struct PPRETDATA *ppinfo = malloc(sizeof(struct PPRETDATA));
     ppinfo->parent = malloc(7 * volumeControlBlock->blockSize); // TODO: why not malloc in pp?
     int res = parsePath(pathname, ppinfo);
-    printf("in fs_stat\n");
 
     if (res == -1) {
         fprintf(stderr, "no such file or directory: %s\n", pathname);
@@ -323,7 +321,6 @@ int fs_closedir(fdDir *dirp) {
         return 0;
     }
 
-    printf("Closing %s\n", dirp->di->d_name);
     free(dirp);
     return 1;
 }
@@ -332,8 +329,6 @@ fdDir * fs_opendir(const char *pathname) {
     struct PPRETDATA *ppinfo = malloc(sizeof(struct PPRETDATA));
     ppinfo->parent = malloc(7 * volumeControlBlock->blockSize); // TODO: why not malloc in pp?
     int res = parsePath(pathname, ppinfo);
-
-    printf("in opendir\n");
 
     if (res == -1) {
         fprintf(stderr, "no such file or directory: %s\n", pathname);
@@ -347,8 +342,6 @@ fdDir * fs_opendir(const char *pathname) {
         fprintf(stderr, "%s not found\n", lastElementName);
         return NULL;
     }
-
-    printf("The file name is %s at index %i\n", lastElementName, index);
 
     struct DE entry = ppinfo->parent[index];
     if (!entry.isDirectory) {
