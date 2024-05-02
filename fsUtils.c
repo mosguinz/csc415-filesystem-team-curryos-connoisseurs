@@ -281,12 +281,12 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp){
     free(entries);
     return NULL;
   }
-  if (dirp->index == DECOUNT-1 || entry.location < 0) {
+  if (dirp->index == DECOUNT-1 || entry.location == -2l) {
+    printf("Exiting, index is %i. Entry location at %d\n", dirp->index, entry.location);
     free(entries);
     return NULL;
   }
 
-//   printDE(entry);
   dirp->di->d_reclen = dirp->d_reclen;
   dirp->di->fileType = entry.isDirectory;
   strcpy(dirp->di->d_name, entry.name);
