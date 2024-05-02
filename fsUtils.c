@@ -10,6 +10,14 @@ int NMOverM(int n, int m){
     return (n+m-1)/m;
 }
 
+/** Get the file name from a path i.e., last token after slash. */
+char* extractFileName(const char* path) {
+    char* lastSlash = strrchr(path, '/');
+    if (strlen(path) == 1 && path[0] == '/') return ".";
+    if (lastSlash) return lastSlash+1;
+    return path;
+}
+
 /*
  * find the index of the child
  *
@@ -65,6 +73,11 @@ int fs_isDir(char * pathname){
     struct PPRETDATA *ppinfo = malloc(sizeof(struct PPRETDATA));
     ppinfo->parent = malloc(7 * 512);
     int res = parsePath(pathname, ppinfo);
+
+    if (res == -1 || ppinfo->lastElementIndex < 0) {
+        return 0;
+    }
+
     struct DE* dir = loadDir(ppinfo->parent, ppinfo->lastElementIndex);
     int returnStatement = dir->isDirectory;
     free(ppinfo->parent);
@@ -79,12 +92,14 @@ int fs_isFile(char * filename){
     struct DE* dir = loadDir(cwd, index);
     int returnStatement = dir->isDirectory;
     free(dir);
-    if( returnStatement == 1 ) {
-        return 0;
-    } else if( returnStatement == 0 ){
-        return 1;
-    }
-    return -1;
+    return returnStatement;
+    // TODO: Remove this once DE.isDirectory is flipped.
+    // if( returnStatement == 1 ) {
+    //     return 0;
+    // } else if( returnStatement == 0 ){
+    //     return 1;
+    // }
+    // return -1;
 }
 
 void printCurrDir() {
@@ -254,6 +269,121 @@ int fs_setcwd(char *pathname){
     printCurrDir();
     return 0;
 }
+
+struct fs_diriteminfo *fs_readdir(fdDir *dirp){
+  int num_blocks = NMOverM(sizeof(struct DE) * DECOUNT, volumeControlBlock->blockSize);
+  struct DE* entries = malloc(num_blocks * volumeControlBlock->blockSize);
+  int res = fileRead(entries, num_blocks, dirp->dirEntryLocation);
+  struct DE entry = entries[dirp->index];
+
+  if (res == -1) {
+    perror("Could not load entry\n");
+    free(entries);
+    return NULL;
+  }
+  if (dirp->index == DECOUNT-1 || entry.location < 0) {
+    free(entries);
+    return NULL;
+  }
+
+//   printDE(entry);
+  dirp->di->d_reclen = dirp->d_reclen;
+  dirp->di->fileType = entry.isDirectory;
+  strcpy(dirp->di->d_name, entry.name);
+  dirp->index++;
+
+  free(entries);
+  return dirp->di;
+}
+
+int fs_stat(const char *pathname, struct fs_stat *buf) {
+    struct PPRETDATA *ppinfo = malloc(sizeof(struct PPRETDATA));
+    ppinfo->parent = malloc(7 * volumeControlBlock->blockSize); // TODO: why not malloc in pp?
+    int res = parsePath(pathname, ppinfo);
+    printf("in fs_stat\n");
+
+    if (res == -1) {
+        fprintf(stderr, "no such file or directory: %s\n", pathname);
+        return -1;
+    }
+
+    char* filename = extractFileName(pathname);
+    int index = findInDir(ppinfo->parent, filename);
+    if (index == -1) {
+        fprintf(stderr, "%s not found\n", filename);
+        return -1;
+    }
+
+    struct DE entry = ppinfo->parent[index];
+    buf->st_size = entry.size;
+    buf->st_blksize = volumeControlBlock->blockSize;
+    buf->st_blocks = NMOverM(entry.size, volumeControlBlock->blockSize);
+    buf->st_accesstime = entry.dateLastAccessed;
+    buf->st_modtime = entry.dataModified;
+    buf->st_createtime = entry.dateLastAccessed;
+
+    return index;
+}
+
+int fs_closedir(fdDir *dirp) {
+
+    if (dirp == NULL) {
+        perror("Cannot close directory, is null\n");
+        return 0;
+    }
+
+    printf("Closing %s\n", dirp->di->d_name);
+    free(dirp);
+    return 1;
+}
+
+fdDir * fs_opendir(const char *pathname) {
+    struct PPRETDATA *ppinfo = malloc(sizeof(struct PPRETDATA));
+    ppinfo->parent = malloc(7 * volumeControlBlock->blockSize); // TODO: why not malloc in pp?
+    int res = parsePath(pathname, ppinfo);
+
+    printf("in opendir\n");
+
+    if (res == -1) {
+        fprintf(stderr, "no such file or directory: %s\n", pathname);
+        return NULL;
+    }
+
+    char* filename = extractFileName(pathname);
+    int index = findInDir(ppinfo->parent, filename);
+
+    if (index == -1) {
+        fprintf(stderr, "%s not found\n", filename);
+        return NULL;
+    }
+
+    printf("The file name is %s at index %i\n", filename, index);
+
+    struct DE entry = ppinfo->parent[index];
+    // printDE(ppinfo->parent[2]);
+    if (!entry.isDirectory) {
+        fprintf(stderr, "%s is not a directory\n", pathname);
+        return NULL;
+    }
+    
+    fdDir *fd = malloc(sizeof(fdDir));    
+
+    fd->d_reclen = NMOverM(entry.size, volumeControlBlock->blockSize);
+    fd->dirEntryPosition = index;
+    fd->dirEntryLocation = entry.location;
+    fd->index = 0;
+
+    // TODO: why tf was this not typedef?? pick one!!11!
+    fd->di = malloc(sizeof(struct fs_diriteminfo));
+    fd->di->d_reclen = NMOverM(entry.size, volumeControlBlock->blockSize);
+    fd->di->fileType = entry.isDirectory;
+    strcpy(fd->di->d_name, filename);
+    
+    free(ppinfo->parent);
+    free(ppinfo);
+    return fd;
+}
+
 
 
 /*
