@@ -27,7 +27,7 @@ int initFreespace(uint64_t numberOfBlocks, uint64_t blockSize){
     // rounding for blocks: (n + m - 1 )/ m
     // the number of blocks the freespace map needs
     int blocksNeeded = NMOverM(sizeof(int)*numberOfBlocks, blockSize);
-    int* fat = malloc( blocksNeeded * blockSize );
+    // int* fat = malloc( blocksNeeded * blockSize );
     for( int i = 1; i < numberOfBlocks; i++ ) {
         fat[i] = i+1;
     }
@@ -40,8 +40,9 @@ int initFreespace(uint64_t numberOfBlocks, uint64_t blockSize){
     fat[numberOfBlocks] = 0xFFFFFFFF;
 
     int blocksWritten = LBAwrite(fat, blocksNeeded, 1);
-    volumeControlBlock->totalFreeSpace = blocksWritten;
+    volumeControlBlock->totalFreeSpace = numberOfBlocks - blocksNeeded;
     volumeControlBlock->freeSpaceLocation = 1;
+    volumeControlBlock->freeSpaceSize = blocksNeeded;
     return blocksWritten == -1 ? -1: blocksNeeded + 1;
 }
 
@@ -52,7 +53,6 @@ int initFreespace(uint64_t numberOfBlocks, uint64_t blockSize){
  * @return the location of the first block that can be used. -1 on error
  */
 int getFreeBlocks(uint64_t numberOfBlocks) {
-    int* freeBlocks;
     if( numberOfBlocks < 1 ) {
         return -1;
     }
@@ -62,6 +62,7 @@ int getFreeBlocks(uint64_t numberOfBlocks) {
 
     // first free block in the FAT table
     int head = volumeControlBlock->firstBlock;
+    printf("current first block in getfreeblocks: %i\n", head);
     int currBlockLoc = volumeControlBlock->firstBlock;
     int nextBlockLoc = fat[currBlockLoc];
     volumeControlBlock->totalFreeSpace--;
@@ -73,10 +74,36 @@ int getFreeBlocks(uint64_t numberOfBlocks) {
     }
     fat[currBlockLoc] = 0xFFFFFFFF;
     volumeControlBlock->firstBlock = nextBlockLoc;
-
     return head;
 }
 
+/*
+ * return free blocks
+ *
+ * @param location the location of the block for the blocks being returned
+ * @return the number of blocks that were returned. -1 on error
+ */
+int returnFreeBlocks(int location){
+    printf("reached the return free blocks method\n");
+    printf("the location: %i\n", location);
+    // TODO: Check if location
+    if( location < 1 || location > volumeControlBlock->totalBlocks ) {
+        printf("hit the early return\n");
+        return -1;
+    }
+    int currBlockLoc = location;
+    printf("currBlockLoc: %i\n", currBlockLoc);
+    int i = 0;
+    while( fat[currBlockLoc] != 0xFFFFFFFF ) {
+        currBlockLoc = fat[currBlockLoc];
+        // printf("currBlockLoc: %i\n", currBlockLoc);
+        i++;
+    }
+    fat[currBlockLoc] = volumeControlBlock->firstBlock;
+    volumeControlBlock->firstBlock = location;
+    printf("vcb first block: %i\n", volumeControlBlock->firstBlock);
+    return i;
+}
 /*
  * write blocks to disk
  *
@@ -88,7 +115,7 @@ int getFreeBlocks(uint64_t numberOfBlocks) {
 int fileWrite(void* buff, int numberOfBlocks, int location){
     int blockSize = volumeControlBlock->blockSize;
     int blocksWritten = 0;
-    for( int i = 0; location != 0xFFFFFFFF && i < numberOfBlocks; i++ ) {
+    for( int i = 0; location != -1l && i < numberOfBlocks; i++ ) {
         if( LBAwrite(buff + blockSize * i, 1, location) == -1 ) {
             return -1;
         }
@@ -109,7 +136,7 @@ int fileWrite(void* buff, int numberOfBlocks, int location){
 int fileRead(void* buff, int numberOfBlocks, int location){
     int blockSize = volumeControlBlock->blockSize;
     int blocksRead = 0;
-    for( int i = 0; location != 0xFFFFFFFF && i < numberOfBlocks; i++ ) {
+    for( int i = 0; location != -1l && i < numberOfBlocks; i++ ) {
         if( LBAread(buff + blockSize*i, 1, location) == -1) {
             return -1;
         }
@@ -117,4 +144,18 @@ int fileRead(void* buff, int numberOfBlocks, int location){
         blocksRead++;
     }
     return blocksRead;
+}
+
+/*
+ * get the index n blocks over
+ *
+ * @param location the location of the block where the search is starting at
+ * @param numberOfBlocks the number of blocks to move over
+ * @return the index of the block n blocks over. -1 on error
+ */
+int fileSeek(int location, int numberOfBlocks){
+    for( int i = 0; location != -1l && i < numberOfBlocks; i ++ ) {
+        location = fat[location];
+    }
+    return location;
 }

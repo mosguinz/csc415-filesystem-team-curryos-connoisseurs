@@ -7,23 +7,25 @@
 #include "mfs.h"
 #include "fs_control.h"
 #include "freespace.h"
+#include "fsUtils.h"
 
-int createDirectory(int numberOfEntries, struct DE *parent, char *name)
+int createDirectory(int numberOfEntries, struct DE *parent)
 {
-	int bytes;			 // The number of bytes needed for entries
-	int blockCount;		 // The total number of blocks needed
-	int maxEntryCount;	 // How many entries we can fit into our blocks
-	int blocksRequested; // Location of first block for new directory
+	int bytes;		// The number of bytes needed for entries
+	int blockCount;		// The total number of blocks needed
+	int maxEntryCount;	// How many entries we can fit into our blocks
+	int blocksRequested; 	// Location of first block for new directory
 
 	/* From # of entries argument determine the maximum number of
 	 * entries we can actually fit */
 	bytes = sizeof(struct DE) * numberOfEntries;
-	blockCount =
-		((bytes + MINBLOCKSIZE - 1) / MINBLOCKSIZE);
+	blockCount = NMOverM(bytes, MINBLOCKSIZE);
+		// ((bytes + MINBLOCKSIZE - 1) / MINBLOCKSIZE);
 	maxEntryCount = (blockCount * MINBLOCKSIZE) / sizeof(struct DE);
 
 	// Allocate memory for directory
 	struct DE *buffer = malloc(blockCount * MINBLOCKSIZE);
+	memset(buffer, 0, blockCount *  MINBLOCKSIZE);
 	if (buffer == NULL)
 	{
 		printf("Error: Could not allocate memory for new directory\n");
@@ -36,12 +38,13 @@ int createDirectory(int numberOfEntries, struct DE *parent, char *name)
 
 	// Request blocks from freespace system
 	blocksRequested = getFreeBlocks(blockCount);
+	printf("Creating Directory at %d, with size %ld bytes\n", blocksRequested, maxEntryCount * sizeof(struct DE));
 
 	// Initialize dot and dot dot entries of the new directory
-	strncpy(buffer[0].name, ".", 36);
 	buffer[0].location = blocksRequested;
 	buffer[0].size = maxEntryCount * sizeof(struct DE);
-	buffer[0].isDirectory = 0;
+	buffer[0].isDirectory = 1;
+	strncpy(buffer[0].name, ".", 36);
 
 	// If no parent is passed, initialize root directory @UNSAFE
 	// Cannot handle if root already exists
@@ -51,7 +54,6 @@ int createDirectory(int numberOfEntries, struct DE *parent, char *name)
 		volumeControlBlock->rootSize = blockCount;
 		volumeControlBlock->rootLocation = blocksRequested;
 		buffer[1] = buffer[0];
-		strncpy(buffer[1].name, "..", 36);
 
 		/* If a parent directory entry is provided, initialize new directory's
 		 * parent and link the new directory entry back to the parent */
@@ -59,25 +61,14 @@ int createDirectory(int numberOfEntries, struct DE *parent, char *name)
 	else
 	{
 		printf("Creating a new directory\n");
-		int parentSize = (parent[0].size) / sizeof(struct DE);
-		int directorySlots = 0;
-		int slotFound = 0;
-		for (; !slotFound && (slotFound < parentSize); directorySlots++)
-		{
-			if (parent[directorySlots].location == -2)
-			{
-				parent[directorySlots] = buffer[0];
-				strncpy(parent[directorySlots].name, name, 36);
-				slotFound = 1;
-				fileWrite(parent, parent[0].size / MINBLOCKSIZE,
-						  parent[0].location);
-			}
-		}
-		if (slotFound == 0)
-			perror("Directory is full");
+		buffer[1].location = parent -> location;
+		buffer[1].size = parent -> size;
 	}
+	strncpy(buffer[1].name, "..", 36);
+	buffer[1].isDirectory = 1;
 
 	// Write newly created directory to disk
 	int blocksWritten = fileWrite(buffer, blockCount, blocksRequested);
+    free(buffer);
 	return blocksRequested;
 }

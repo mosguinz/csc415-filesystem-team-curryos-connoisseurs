@@ -43,7 +43,7 @@ CFLAGS= -g -I.
 LIBS =pthread
 DEPS =
 # Add any additional objects to this list
-ADDOBJ= fsInit.o freespace.o createDirectory.o fsUtils.o
+ADDOBJ= fsInit.o freespace.o createDirectory.o fsUtils.o directory_routines.o b_io.o
 ARCH = $(shell uname -m)
 
 ifeq ($(ARCH), aarch64)

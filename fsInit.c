@@ -13,18 +13,6 @@
 * This file is where you will start and initialize your system
 *
 **************************************************************/
-/*
-struct VCB
-{
-	long signature; 	// VCB identifier
-	int totalBlocks; 	// blocks in volume
-	int blockSize; 		// size of blocks
-	int rootLocation; 	// location of root directory
-	int firstBlock; 	// location of the first usable block
-	int freeSpaceLocation; 	// location of the free space block
-};
-*/
-
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -33,24 +21,29 @@ struct VCB
 
 #include "fsLow.h"
 #include "mfs.h"
+#include "fsUtils.h"
 #include "fs_control.h"
 #include "freespace.h"
 
 struct VCB * volumeControlBlock;
 int * fat;
 struct DE * root;
+struct DE * cwd;
+char * cwdPathName;
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 	long const 		VCBSIGNATURE = 8357492010847392157;
 	struct VCB * 		buffer;
-	int 			freeSpaceBlocks;
+    // this variable isn't used. delete the lines if they are extra. LOVE ARJUN
+	// int 			freeSpaceBlocks;
 
-	freeSpaceBlocks =
-		((numberOfBlocks + MINBLOCKSIZE - 1) / MINBLOCKSIZE );
-	fat = (int * ) malloc(sizeof(int) * numberOfBlocks * MINBLOCKSIZE);
+	// freeSpaceBlocks =
+	// 	((numberOfBlocks + MINBLOCKSIZE - 1) / MINBLOCKSIZE );
+    int blocksNeeded = NMOverM(sizeof(int)*numberOfBlocks, blockSize);
+    fat = (int *) malloc(blocksNeeded * blockSize );
 	volumeControlBlock = (struct VCB *) malloc(MINBLOCKSIZE);
-	root = (struct DE *) malloc(MINBLOCKSIZE);
-
+	root = (struct DE *) malloc(7 * MINBLOCKSIZE);
+	cwdPathName = (char *) malloc(36);
 
 	printf ("Initializing File System with %ld blocks \
 		with a block size of %ld\n", numberOfBlocks, blockSize);
@@ -61,7 +54,9 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 	if ( buffer->signature == VCBSIGNATURE ){
         	LBAread(volumeControlBlock, 1, 0);
 		printf("Disk already formatted\n");
-		//LBAread ( root, 1, volumeControlBlock->rootLocation );
+		LBAread ( root, volumeControlBlock->rootSize, volumeControlBlock->rootLocation );
+		LBAread ( fat, volumeControlBlock->freeSpaceSize,
+			volumeControlBlock->freeSpaceLocation);
 	}else{
 		printf("Formatting disk\n");
 		memset(volumeControlBlock, 0, MINBLOCKSIZE);
@@ -72,10 +67,15 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 			initFreespace(numberOfBlocks, MINBLOCKSIZE);
 		printf("Free space initialized\n");
 		volumeControlBlock -> freeSpaceLocation = 1;
-		volumeControlBlock -> rootLocation = 
-			createDirectory(50, NULL, "/");
+		volumeControlBlock -> rootLocation =
+			createDirectory(50, NULL);
 		LBAwrite(volumeControlBlock, 1, 0);
+
+		LBAread ( root, volumeControlBlock->rootSize, volumeControlBlock->rootLocation );
 	}
+	fs_setcwd("/");
+	strncpy(cwdPathName, "/", 36);
+	printf("Setting CWD to %s\n", cwdPathName);
 
 	free(buffer);
 
@@ -83,6 +83,15 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 }
 
 void exitFileSystem (){
+	fileWrite(volumeControlBlock, 1, 0);
+	fileWrite(fat,
+		MINBLOCKSIZE * volumeControlBlock -> freeSpaceSize,
+		volumeControlBlock -> freeSpaceLocation);
+    free(fat);
+    free(volumeControlBlock);
+    free(root);
+    free(cwdPathName);
+    free(cwd);
 	printf ("System exiting\n");
 }
 

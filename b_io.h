@@ -24,5 +24,21 @@ int b_write (b_io_fd fd, char * buffer, int count);
 int b_seek (b_io_fd fd, off_t offset, int whence);
 int b_close (b_io_fd fd);
 
+typedef struct b_fcb
+	{
+	struct DE * fileInfo;	//holfd information relevant to file operations
+	struct DE * parent;	//holfd information relevant to file operations
+
+	char * buf;		//holds the open file buffer
+	int index;		//holds the current position in the buffer
+    int remainingBytes; // the number of bytes that are left in the buffer
+	int buflen;		//holds how many valid bytes are in the buffer
+	int currentBlock;	//holds position within file in blocks
+	int numBlocks;		//holds the total number of blocks in file
+    int fileIndex;      //holds the index in the parent of the file
+
+	int activeFlags;	//holds the flags for the opened file
+	} b_fcb;
+
 #endif
 

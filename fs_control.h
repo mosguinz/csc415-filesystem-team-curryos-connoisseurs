@@ -7,6 +7,7 @@ struct VCB
 	int totalBlocks;	   // blocks in volume
 	int blockSize;		   // size of blocks
 	int freeSpaceLocation; // location of the FAT table
+	int freeSpaceSize;     // size of the FAT table
 	int rootLocation;	   // location of root directory
 	int rootSize;		// Size of root directory in blocks
 	int firstBlock;		   // location of the first usable block
@@ -19,15 +20,22 @@ struct DE
 	/* location set to -2 for unused directory entry,
 	 * location set to positive non-zero value if in use */
 	long location;
-	int size;
+	int size;	// Size in bytes
 
 	// Metadata
 	int dateCreated;
 	int dataModified;
 	int dateLastAccessed;
 
-	int isDirectory; // '0' for directories '1' for non-directories
+	int isDirectory; // 1 for directories 0 for non-directories
 	char name[36];
+};
+
+// Specifications for parsepath return data
+struct PPRETDATA{
+    struct DE* parent;
+    int lastElementIndex;
+    char* lastElementName;
 };
 /*
  * @brief
@@ -37,6 +45,8 @@ struct DE
  */
 extern struct VCB *volumeControlBlock;
 extern struct DE *root;
+extern struct DE *cwd;
+extern char * cwdPathName;
 extern int *fat;
-int createDirectory(int numberOfEntries, struct DE *parent, char *name);
+int createDirectory(int numberOfEntries, struct DE *parent);
 #endif
