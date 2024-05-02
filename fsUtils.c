@@ -307,10 +307,9 @@ int fs_stat(const char *pathname, struct fs_stat *buf) {
         return -1;
     }
 
-    char* filename = extractFileName(pathname);
-    int index = findInDir(ppinfo->parent, filename);
+    int index = findInDir(ppinfo->parent, ppinfo->lastElementName);
     if (index == -1) {
-        fprintf(stderr, "%s not found\n", filename);
+        fprintf(stderr, "%s not found\n", ppinfo->lastElementName);
         return -1;
     }
 
@@ -349,18 +348,17 @@ fdDir * fs_opendir(const char *pathname) {
         return NULL;
     }
 
-    char* filename = extractFileName(pathname);
-    int index = findInDir(ppinfo->parent, filename);
+    char* lastElementName = ppinfo->lastElementName ? ppinfo->lastElementName : ".";
+    int index = findInDir(ppinfo->parent, lastElementName);
 
     if (index == -1) {
-        fprintf(stderr, "%s not found\n", filename);
+        fprintf(stderr, "%s not found\n", lastElementName);
         return NULL;
     }
 
-    printf("The file name is %s at index %i\n", filename, index);
+    printf("The file name is %s at index %i\n", lastElementName, index);
 
     struct DE entry = ppinfo->parent[index];
-    // printDE(ppinfo->parent[2]);
     if (!entry.isDirectory) {
         fprintf(stderr, "%s is not a directory\n", pathname);
         return NULL;
@@ -377,7 +375,7 @@ fdDir * fs_opendir(const char *pathname) {
     fd->di = malloc(sizeof(struct fs_diriteminfo));
     fd->di->d_reclen = NMOverM(entry.size, volumeControlBlock->blockSize);
     fd->di->fileType = entry.isDirectory;
-    strcpy(fd->di->d_name, filename);
+    strcpy(fd->di->d_name, lastElementName);
     
     free(ppinfo->parent);
     free(ppinfo);
