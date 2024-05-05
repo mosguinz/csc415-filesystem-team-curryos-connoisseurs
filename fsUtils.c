@@ -28,17 +28,28 @@ int findInDir(struct DE* searchDirectory, char* name){
 }
 
 /*
- * find the index of an empty DE
+ * find the index of an empty DE.
  *
- * @param directory the DE that is being searched
- * @return the index of the DE or -1 if not found
+ * @param directory the DE that is being searched and name of the potential new file
+ * @return the index of the DE or -1 if not found or if a file/directory with that name already exists TODO: Allow files/directories to have same name?
  */
-int find_vacant_space ( struct DE * directory ){
-	for ( int i = 0 ; i < (directory->size)/sizeof(struct DE) ; i++ )
+int find_vacant_space ( struct DE * directory , char * fileName){
+    int index;          // Index for potential new element
+    index = -1;
+	for (int i = 0 ; i < (directory->size)/sizeof(struct DE) ; i++ ) {
 		if ( (directory + i)->location == -2 )
-			return i;
-	perror("Directory is full");
-	return -1;
+			index = i;
+        if ( strcmp(fileName, (directory +i)->name) == 0) {
+                perror("Duplicate found");
+                return -1;
+            }
+        }
+    if ( index == -1){
+        perror("Directory is full");
+	    return -1;
+    }
+    return index;
+	
 }
 
 /*
@@ -80,18 +91,12 @@ int fs_isDir(char * pathname){
 
 //return 1 if file, 0 otherwise
 int fs_isFile(char * filename){
-    int index = findInDir(cwd, filename);
-    struct DE* dir = loadDir(cwd, index);
-    int returnStatement = dir->isDirectory;
-    free(dir);
-    return returnStatement;
-    // TODO: Remove this once DE.isDirectory is flipped.
-    // if( returnStatement == 1 ) {
-    //     return 0;
-    // } else if( returnStatement == 0 ){
-    //     return 1;
-    // }
-    // return -1;
+	int index = findInDir(cwd, filename);
+	struct DE* dir = loadDir(cwd, index);
+	int returnStatement = dir->isDirectory;
+	free(dir);
+	printf("%d\n", returnStatement);
+	return !returnStatement;
 }
 
 void printCurrDir() {
@@ -136,7 +141,7 @@ int fs_mv(const char* startpathname, const char* endpathname) {
 
     struct DE* endDir = loadDir(endppinfo->parent, endIndex);
 
-    int emptyIndex = find_vacant_space(endDir);
+    int emptyIndex = find_vacant_space(endDir, startppinfo->lastElementName); // TODO MAKE THIS AN EARLIER CHECK?
     if(emptyIndex == -1) {
         free(startppinfo->parent);
         free(startppinfo);

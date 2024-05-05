@@ -33,6 +33,11 @@ int fs_mkdir (const char *pathname, mode_t mode){
 	// Read all relevant data from parsepath needed for directory creation
 	parent = parsepathinfo -> parent;
 	directoryName = parsepathinfo->lastElementName;
+	emptyIndex = find_vacant_space ( parent , directoryName);
+	if ( emptyIndex == -1){
+		perror("Find Vacant Space");
+		return -1;
+	}
 
 	// Create and link new directory to an empty position in parent array
 	ret = createDirectory(DEFAULTDIRSIZE, parent);
@@ -46,7 +51,6 @@ int fs_mkdir (const char *pathname, mode_t mode){
 		perror("File Read");
 		return -1;
 	}
-	emptyIndex = find_vacant_space ( parent );
 	parent[emptyIndex] = newDirectory[0];
 	strncpy(parent[emptyIndex].name, directoryName, 36);
 
