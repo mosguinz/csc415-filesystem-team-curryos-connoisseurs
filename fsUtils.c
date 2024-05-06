@@ -136,8 +136,13 @@ int fs_mv(const char* startpathname, const char* endpathname) {
     }
 
     struct DE* endDir = loadDir(endppinfo->parent, endIndex);
-
-    int emptyIndex = find_vacant_space(endDir, startppinfo->lastElementName); // TODO MAKE THIS AN EARLIER CHECK?
+    int emptyIndex = findInDir(endDir, startppinfo->lastElementName);
+    if( emptyIndex == -1) {
+        emptyIndex = find_vacant_space(endDir, startppinfo->lastElementName);
+    }
+    else if(endDir[emptyIndex].location > 0){
+        returnFreeBlocks(endDir[emptyIndex].location);
+    }
     if(emptyIndex == -1) {
         free(startppinfo->parent);
         free(startppinfo);
@@ -178,8 +183,19 @@ int fs_mv(const char* startpathname, const char* endpathname) {
  * @return the path of the current working directory
  */
 char * fs_getcwd(char *pathname, size_t size){
+    printCurrDir();
     strncpy(pathname, cwdPathName, size);
     return cwdPathName;
+}
+
+void printCurrDir() {
+    struct DE* searchDirectory = loadDir(cwd, 0);
+    for( int i = 0; i < DECOUNT; i++) {
+        if(searchDirectory[i].location != -2l ) {
+            printf("name of directory: %s\n", searchDirectory[i].name);
+        }
+    }
+    free(searchDirectory);
 }
 
 /*
@@ -491,6 +507,7 @@ int fs_rmdir(const char *pathname) {
  */
 int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
     if(pathName == NULL || ppinfo == NULL) {
+        fprintf(stderr, "invalid pointers");
         return -1;
     }
     struct DE* currDirectory;
@@ -515,6 +532,7 @@ int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
         else {
             free(path);
             free(currDirectory);
+            fprintf(stderr, "invalid path\n");
             return -1;
         }
     }
@@ -538,6 +556,7 @@ int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
                 return 0;
             }
             else {
+                fprintf(stderr, "invalid path\n");
                 return -1;
             }
         }
@@ -545,7 +564,15 @@ int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
             currDirectory = loadDir(prevDirectory, index);
         }
         else {
-            return -1;
+            prevToken = currToken;
+            currToken = strtok_r(NULL, "/", &savePtr);
+            if( currToken == NULL ) {
+                break;
+            }
+            else {
+                fprintf(stderr, "invalid path\n");
+                return -1;
+            }
         }
     }
     memcpy(ppinfo->parent, prevDirectory, DE_SIZE);
