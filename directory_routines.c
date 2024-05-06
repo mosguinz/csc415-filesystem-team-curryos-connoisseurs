@@ -8,7 +8,6 @@
 #include "freespace.h"
 #include "fsUtils.h"
 
-#define DEFAULTDIRSIZE 50
 
 int fs_mkdir (const char *pathname, mode_t mode){
 	int ret;				// Used for error handling
@@ -19,7 +18,7 @@ int fs_mkdir (const char *pathname, mode_t mode){
 	struct DE * newDirectory;		// Used for new directory entry
 
 	parsepathinfo = malloc(sizeof(struct PPRETDATA));
-	parsepathinfo->parent = malloc(7*MINBLOCKSIZE);
+	parsepathinfo->parent = malloc(DE_SIZE);
 	newDirectory = malloc(MINBLOCKSIZE);
 	if ( !parsepathinfo || !newDirectory ){
 		perror("malloc");
@@ -33,9 +32,14 @@ int fs_mkdir (const char *pathname, mode_t mode){
 	// Read all relevant data from parsepath needed for directory creation
 	parent = parsepathinfo -> parent;
 	directoryName = parsepathinfo->lastElementName;
+	emptyIndex = find_vacant_space ( parent , directoryName);
+	if ( emptyIndex == -1){
+		perror("Find Vacant Space");
+		return -1;
+	}
 
 	// Create and link new directory to an empty position in parent array
-	ret = createDirectory(DEFAULTDIRSIZE, parent);
+	ret = createDirectory(DEFAULT_DIR_SIZE, parent);
 	if ( ret == -1 ){
 		perror("Create Directory");
 		return -1;
@@ -46,9 +50,8 @@ int fs_mkdir (const char *pathname, mode_t mode){
 		perror("File Read");
 		return -1;
 	}
-	emptyIndex = find_vacant_space ( parent );
 	parent[emptyIndex] = newDirectory[0];
-	strncpy(parent[emptyIndex].name, directoryName, 36);
+	strncpy(parent[emptyIndex].name, directoryName, DE_NAME_SIZE);
 
 	// Write changes back to parent directory to complete linking
     int size = NMOverM(parent->size, MINBLOCKSIZE);
