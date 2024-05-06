@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <string.h>
+#include <time.h>
 
 #include "fsLow.h"
 #include "mfs.h"
@@ -45,6 +46,12 @@ int createDirectory(int numberOfEntries, struct DE *parent)
 	buffer[0].size = maxEntryCount * sizeof(struct DE);
 	buffer[0].isDirectory = 1;
 	strncpy(buffer[0].name, ".", DE_NAME_SIZE);
+
+	// Set timestamp fields
+	time_t tm = time(NULL);
+	buffer[0].dateCreated = tm;
+	buffer[0].dateModified = tm;
+	buffer[0].dateLastAccessed = tm;
 
 	// If no parent is passed, initialize root directory @UNSAFE
 	// Cannot handle if root already exists
