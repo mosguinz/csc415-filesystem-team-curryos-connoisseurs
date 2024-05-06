@@ -268,28 +268,34 @@ int fs_setcwd(char *pathname){
 }
 
 struct fs_diriteminfo *fs_readdir(fdDir *dirp){
-  int num_blocks = NMOverM(sizeof(struct DE) * DECOUNT, volumeControlBlock->blockSize);
-  struct DE* entries = malloc(num_blocks * volumeControlBlock->blockSize);
-  int res = fileRead(entries, num_blocks, dirp->dirEntryLocation);
-  struct DE entry = entries[dirp->index];
+    int num_blocks = NMOverM(sizeof(struct DE) * DECOUNT, volumeControlBlock->blockSize);
+    struct DE* entries = malloc(num_blocks * volumeControlBlock->blockSize);
+    int res = fileRead(entries, num_blocks, dirp->dirEntryLocation);
+    struct DE entry = entries[dirp->index];
 
-  if (res == -1) {
-    perror("Could not load entry\n");
+    if (res == -1) {
+        perror("Could not load entry\n");
+        free(entries);
+        return NULL;
+    }
+
+    // Skip empty entries
+    while (dirp->index < DECOUNT-1 && entry.location == -2l) {
+        entry = entries[++dirp->index];
+    }
+
+    if (dirp->index > DECOUNT-1) {
+        free(entries);
+        return NULL;
+    }
+
+    dirp->di->d_reclen = dirp->d_reclen;
+    dirp->di->fileType = entry.isDirectory;
+    strcpy(dirp->di->d_name, entry.name);
+    dirp->index++;
+
     free(entries);
-    return NULL;
-  }
-  if (dirp->index == DECOUNT-1 || entry.location == -2l) {
-    free(entries);
-    return NULL;
-  }
-
-  dirp->di->d_reclen = dirp->d_reclen;
-  dirp->di->fileType = entry.isDirectory;
-  strcpy(dirp->di->d_name, entry.name);
-  dirp->index++;
-
-  free(entries);
-  return dirp->di;
+    return dirp->di;
 }
 
 int fs_stat(const char *pathname, struct fs_stat *buf) {
