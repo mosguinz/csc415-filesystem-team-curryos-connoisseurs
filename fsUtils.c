@@ -52,7 +52,6 @@ int find_vacant_space ( struct DE * directory , char * fileName){
 			return -1;
 		}
 		if ( (directory + i)->location == -2 ){
-			printf("%s\n%s\n", fileName, (directory+i)->name);
 			return i;
 		}
 	}
@@ -164,7 +163,6 @@ int fs_mv(const char* startpathname, const char* endpathname) {
         struct DE* tempDir = loadDir(parentDir, startIndex);
         tempDir[1] = endDir[0];
         strncpy(tempDir[1].name, "..", DE_NAME_SIZE);
-        printf("reached the write\n");
         fileWrite(tempDir, NMOverM(DE_SIZE, MINBLOCKSIZE), tempDir->location);
         free(tempDir);
     }
@@ -251,7 +249,6 @@ int fs_setcwd(char *pathname){
         return 0;
     }
     if( res == -1 || ppinfo->lastElementIndex == -1){
-        printf("fail 1\n");
         free(ppinfo->parent);
         free(ppinfo);
         return -1;
@@ -260,7 +257,6 @@ int fs_setcwd(char *pathname){
     dir = loadDir(ppinfo->parent, ppinfo->lastElementIndex);
     if( dir->isDirectory != 1 ) {
         free(dir);
-        printf("fail 2\n");
         return -1;
     }
     memcpy(cwd, dir, DE_SIZE);
@@ -444,7 +440,6 @@ void printFCB(b_fcb fcb){
 
 //removes a file
 int fs_delete(char* filename){
-    printf("reached the delete function\n");
     struct PPRETDATA *ppinfo = malloc( sizeof(struct PPRETDATA));
     ppinfo->parent = malloc( DE_SIZE );
     int res = parsePath(filename, ppinfo);
@@ -458,7 +453,6 @@ int fs_delete(char* filename){
         if( returnFreeBlocks(ppinfo->parent[index].location) == -1) {
             free(ppinfo->parent);
             free(ppinfo);
-            printf("hitting early return\n");
             return -1;
         }
     }
@@ -467,7 +461,6 @@ int fs_delete(char* filename){
     fileWrite(ppinfo->parent, dirSize, ppinfo->parent[0].location);
     free(ppinfo->parent);
     free(ppinfo);
-    printf("reached the end\n");
     return 0;
 }
 
@@ -499,7 +492,6 @@ int isEmpty(struct DE* dir) {
 }
 
 int fs_rmdir(const char *pathname) {
-    printf("reached the rmdir function\n");
     struct PPRETDATA *ppinfo = malloc( sizeof(struct PPRETDATA));
     ppinfo->parent = malloc( DE_SIZE );
     int res = parsePath(pathname, ppinfo);
@@ -533,7 +525,6 @@ int fs_rmdir(const char *pathname) {
  * @return 0 on success -1 on failure
  */
 int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
-    printf("path: %s\n", pathName);
     if(pathName == NULL || ppinfo == NULL) {
         return -1;
     }
@@ -547,7 +538,6 @@ int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
     char* savePtr = NULL;
     char* path = strdup(pathName);
     char* currToken = strtok_r(path, "/", &savePtr);
-    printf("curr token: %s\n", currToken);
     if( currToken == NULL ) {
         if(pathName[0] == '/') {
             memcpy(ppinfo->parent, currDirectory, DE_SIZE);
@@ -571,7 +561,6 @@ int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
     }
     char* prevToken = currToken;
     while( (currToken = strtok_r(NULL, "/", &savePtr)) != NULL ) {
-        printf("curr token: %s\n", currToken);
         memcpy(prevDirectory, currDirectory, DE_SIZE);
         index = findInDir(prevDirectory, currToken);
         if( index == -1 ) {
