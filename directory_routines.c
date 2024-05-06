@@ -39,7 +39,7 @@ int fs_mkdir (const char *pathname, mode_t mode){
 	}
 
 	// Create and link new directory to an empty position in parent array
-	ret = createDirectory(DEFAULT_DIR_SIZE, parent);
+	ret = createDirectory(DEFAULTDIRSIZE, parent);
 	if ( ret == -1 ){
 		perror("Create Directory");
 		return -1;

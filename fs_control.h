@@ -31,7 +31,7 @@ struct DE
 
 	// Metadata
 	time_t dateCreated;
-	time_t dataModified;
+	time_t dateModified;
 	time_t dateLastAccessed;
 
 	int isDirectory; // 1 for directories 0 for non-directories

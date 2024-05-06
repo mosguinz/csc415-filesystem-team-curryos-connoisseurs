@@ -179,7 +179,7 @@ char * fs_getcwd(char *pathname, size_t size){
     printf("DE_SIZE: %i\n", DE_SIZE);
     printf("DE_NAME_SIZE: %i\n", DE_NAME_SIZE);
     printf("DECOUNT: %i\n", DECOUNT);
-    printf("DEFAULT_DIR_SIZE: %i\n", DEFAULT_DIR_SIZE);
+    printf("DEFAULT_DIR_SIZE: %i\n", DEFAULTDIRSIZE);
     return cwdPathName;
 }
 
@@ -319,7 +319,7 @@ int fs_stat(const char *pathname, struct fs_stat *buf) {
     buf->st_blksize = volumeControlBlock->blockSize;
     buf->st_blocks = NMOverM(entry.size, volumeControlBlock->blockSize);
     buf->st_accesstime = entry.dateLastAccessed;
-    buf->st_modtime = entry.dataModified;
+    buf->st_modtime = entry.dateModified;
     buf->st_createtime = entry.dateLastAccessed;
 
     return index;
@@ -405,7 +405,7 @@ void printDE(struct DE* directory) {
     printf ("| location         | %-26li|\n", directory->location);
     printf ("| is directory     | %-26i|\n", directory->isDirectory);
     printf ("| date created     | %-26i|\n", directory->dateCreated);
-    printf ("| date modified    | %-26i|\n", directory->dataModified);
+    printf ("| date modified    | %-26i|\n", directory->dateModified);
     printf ("|-----------------------------------------------|\n");
 }
 
