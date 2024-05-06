@@ -47,7 +47,7 @@ int fs_mkdir (const char *pathname, mode_t mode){
 	directoryName = parsepathinfo->lastElementName;
 	emptyIndex = find_vacant_space ( parent , directoryName);
 	if ( emptyIndex == -1){
-		fprintf("error in Find Vacant Space\n");
+		fprintf(stderr, "error in Find Vacant Space\n");
 		return -1;
 	}
 
