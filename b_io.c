@@ -19,6 +19,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <time.h>
 #include "b_io.h"
 #include "fs_control.h"
 #include "fsUtils.h"
@@ -60,100 +61,158 @@ b_io_fd b_getFCB ()
 // Modification of interface for this assignment, flags match the Linux flags for open
 // O_RDONLY, O_WRONLY, or O_RDWR
 b_io_fd b_open (char * filename, int flags){
-	int ret;                // Used for error handling
-	int fileLocation;           // Used for storing physical location of file
-	int emptyIndex;             // Track first unused entry in parent
-	int parentSize;             // Compute size of parent directory for linking
-	b_io_fd returnFd;           // File Descriptor
-	struct PPRETDATA * parsepathinfo;   // Structure returned from parse path
-	struct DE * parent;         // Track parent directory entry to write back to
-	struct DE * fileInfo;           // Used in case we create a new file
+    int ret;                // Used for error handling
+    int fileLocation;           // Used for storing physical location of file
+    int emptyIndex;             // Track first unused entry in parent
+    int parentSize;             // Compute size of parent directory for linking
+    b_io_fd returnFd;           // File Descriptor
+    struct PPRETDATA * ppinfo;   // Structure returned from parse path
+    struct DE * parent;         // Track parent directory entry to write back to
+    struct DE * fileInfo;           // Used in case we create a new file
+    struct DE file;
 
-	if (startup == 0) b_init();         //Initialize our system
-	returnFd = b_getFCB();          // get our own file descriptor
-	if ( returnFd == -2 ){
-		fprintf(stderr, "error in getFCB\n");
-		return returnFd;
-	}
+    if (startup == 0) b_init();         //Initialize our system
+    returnFd = b_getFCB();          // get our own file descriptor
+    if ( returnFd == -2 ){
+        fprintf(stderr, "error in getFCB\n");
+        return returnFd;
+    }
 
-	// Prepare structures for parse path
-	parsepathinfo = malloc(sizeof(struct PPRETDATA));
-	parsepathinfo->parent = malloc(DE_SIZE);
-	fileInfo = malloc(MINBLOCKSIZE);
-	memset(fileInfo, 0, MINBLOCKSIZE);
-	if ( !parsepathinfo || !fileInfo ) { // TODO separate malloc checks and free if needed
-		perror("malloc");
-		return -1;
-	}
+    // Prepare structures for parse path
+    ppinfo = malloc(sizeof(struct PPRETDATA));
+    ppinfo->parent = malloc(DE_SIZE);
+    fileInfo = malloc(MINBLOCKSIZE);
+    memset(fileInfo, 0, MINBLOCKSIZE);
+    if ( !ppinfo || !fileInfo ) { // TODO separate malloc checks and free if needed
+        perror("malloc");
+        return -1;
+    }
 
-	// Parse through input string and retrieve parent structure and file name
-	if ( parsePath(filename, parsepathinfo) == -1 ) {
-		fprintf(stderr, "error in Parse Path\n");
-		return -1;
-	}
-	parent = parsepathinfo->parent;
+    // Parse through input string and retrieve parent structure and file name
+    if ( parsePath(filename, ppinfo) == -1 ) {
+        fprintf(stderr, "error in Parse Path\n");
+        return -1;
+    }
+    parent = ppinfo->parent;
 
-	// If create flag is set create new file
-	if( flags & O_CREAT ) {
-		// Populate Directory Entry of new file leave location empty
-		fileInfo->isDirectory = 0;
-		fileInfo->size = 0;
-		fileInfo->location = -1;
-		strncpy(fileInfo->name, parsepathinfo->lastElementName, DE_NAME_SIZE);
-		// Date Fields Populated Here
+    b_fcb fcb = fcbArray[returnFd];
 
-		// Link back to parent directory
-		emptyIndex = find_vacant_space ( parent , parsepathinfo->lastElementName);  // TODO look for duplicates?
-		parent[emptyIndex] = *fileInfo;
-		strncpy(parent[emptyIndex].name, parsepathinfo->lastElementName, DE_NAME_SIZE);
+    // // If create flag is set create new file
+    // if( parsepathinfo->lastElementIndex < 0 && flags & O_CREAT ) {
+    //     // Populate Directory Entry of new file leave location empty
+    //     fileInfo->isDirectory = 0;
+    //     fileInfo->size = 0;
+    //     fileInfo->location = -1;
+    //     strncpy(fileInfo->name, parsepathinfo->lastElementName, DE_NAME_SIZE);
+    //     // Date Fields Populated Here
 
-		// Write back changes to complete linking
-		parentSize = NMOverM(parent->size, MINBLOCKSIZE);
-		fileWrite(parent, parentSize, parent->location);
-		fcbArray[returnFd].fileIndex = emptyIndex;
-		fcbArray[returnFd].parent = parent;
-		fcbArray[returnFd].fileInfo = fileInfo;
-		fcbArray[returnFd].buf = malloc(B_CHUNK_SIZE);
-		fcbArray[returnFd].index = 0;
-		fcbArray[returnFd].buflen = B_CHUNK_SIZE;
-		fcbArray[returnFd].numBlocks = 0;
-		fcbArray[returnFd].currentBlock = -1;
-		fcbArray[returnFd].activeFlags = flags;
-		fcbArray[returnFd].remainingBytes = 0;
-		b_fcb fcb = fcbArray[returnFd];
-		return returnFd;
-	}
-	else {
-		if(parsepathinfo->lastElementIndex == -1) {
-			fprintf(stderr, "invalid path\n");
-			return -1;
-		}
-		struct DE file = parent[parsepathinfo->lastElementIndex];
-		if(file.isDirectory == 1) {
-			fprintf(stderr, "cannot open a directory\n");
-			free(parsepathinfo->parent);
-			free(parsepathinfo);
-			return -1;
-		}
-		fileInfo->isDirectory = 0;
-		fileInfo->size = file.size;
-		strncpy(fileInfo->name, file.name, DE_NAME_SIZE);
-		fileInfo->dateCreated = file.dateCreated;
-		fileInfo->location = file.location;
-		int numBlocks = NMOverM(fileInfo->size, MINBLOCKSIZE);
-		fcbArray[returnFd].index = 0;
-		fcbArray[returnFd].numBlocks = numBlocks;
-		fcbArray[returnFd].fileInfo = fileInfo;
-		fcbArray[returnFd].buf = malloc(B_CHUNK_SIZE);
-		fcbArray[returnFd].buflen = B_CHUNK_SIZE;
-		fcbArray[returnFd].remainingBytes = file.size;
-		fcbArray[returnFd].currentBlock = file.location;
-		fcbArray[returnFd].parent = parent;
-		fcbArray[returnFd].activeFlags = flags;
-		free(parsepathinfo);
-		printf("finished opening fd\n");
-		return returnFd;
-	}
+    //     // Link back to parent directory
+    //     emptyIndex = find_vacant_space ( parent , parsepathinfo->lastElementName);  // TODO look for duplicates?
+    //     parent[emptyIndex] = *fileInfo;
+    //     strncpy(parent[emptyIndex].name, parsepathinfo->lastElementName, DE_NAME_SIZE);
+
+    //     // Write back changes to complete linking
+    //     parentSize = NMOverM(parent->size, MINBLOCKSIZE);
+    //     fileWrite(parent, parentSize, parent->location);
+    //     fcbArray[returnFd].fileIndex = emptyIndex;
+    //     fcbArray[returnFd].parent = parent;
+    //     fcbArray[returnFd].fileInfo = fileInfo;
+    //     fcbArray[returnFd].buf = malloc(B_CHUNK_SIZE);
+    //     fcbArray[returnFd].index = 0;
+    //     fcbArray[returnFd].buflen = B_CHUNK_SIZE;
+    //     fcbArray[returnFd].numBlocks = 0;
+    //     fcbArray[returnFd].currentBlock = -1;
+    //     fcbArray[returnFd].activeFlags = flags;
+    //     fcbArray[returnFd].remainingBytes = 0;
+    //     b_fcb fcb = fcbArray[returnFd];
+    //     return returnFd;
+    // }
+    // else {
+    //     if(parsepathinfo->lastElementIndex == -1) {
+    //         fprintf(stderr, "invalid path\n");
+    //         return -1;
+    //     }
+    //     struct DE file = parent[parsepathinfo->lastElementIndex];
+    //     if(file.isDirectory == 1) {
+    //         fprintf(stderr, "cannot open a directory\n");
+    //         free(parsepathinfo->parent);
+    //         free(parsepathinfo);
+    //         return -1;
+    //     }
+    //     fileInfo->isDirectory = 0;
+    //     fileInfo->size = file.size;
+    //     strncpy(fileInfo->name, file.name, DE_NAME_SIZE);
+    //     fileInfo->dateCreated = file.dateCreated;
+    //     fileInfo->location = file.location;
+    //     int numBlocks = NMOverM(fileInfo->size, MINBLOCKSIZE);
+    //     fcbArray[returnFd].index = 0;
+    //     fcbArray[returnFd].numBlocks = numBlocks;
+    //     fcbArray[returnFd].fileInfo = fileInfo;
+    //     fcbArray[returnFd].buf = malloc(B_CHUNK_SIZE);
+    //     fcbArray[returnFd].buflen = B_CHUNK_SIZE;
+    //     fcbArray[returnFd].remainingBytes = file.size;
+    //     fcbArray[returnFd].currentBlock = file.location;
+    //     fcbArray[returnFd].parent = parent;
+    //     fcbArray[returnFd].activeFlags = flags;
+    //     free(parsepathinfo);
+    //     printf("finished opening fd\n");
+    //     return returnFd;
+    // }
+
+    // read an existing file
+    if( flags & O_RDONLY && ppinfo->lastElementIndex > 0 ) {
+        file = ppinfo->parent[ppinfo->lastElementIndex];
+        fcb.fileInfo = &file;
+        fcb.remainingBytes = file.size;
+        fcb.index = 0;
+        fcb.fileIndex = ppinfo->lastElementIndex;
+        fcb.numBlocks = 0;
+        fcb.fileIndex = ppinfo->lastElementIndex;
+    }
+    // write an already created filec
+    else if( ppinfo->lastElementIndex > 0) {
+        file = ppinfo->parent[ppinfo->lastElementIndex];
+        fcb.fileInfo = &file;
+        fcb.remainingBytes = file.size;
+        fcb.index = 0;
+        fcb.fileIndex = ppinfo->lastElementIndex;
+        fcb.numBlocks = NMOverM(file.size, MINBLOCKSIZE);
+        fcb.fileIndex = ppinfo->lastElementIndex;
+        // offset the file if it needs to be truncated
+        if(flags & O_TRUNC) {
+        }
+    }
+    // write a new file
+    else if(flags & O_CREAT) {
+        printf("hit the create for touch\n");
+        strncpy(file.name, ppinfo->lastElementName, 28);
+        file.size = 0;
+        file.location = -1;
+        time_t currTime = time(NULL);
+        file.dateCreated = currTime;
+        file.dateModified = currTime;
+        file.dateLastAccessed = currTime;
+        file.isDirectory = 0;
+        fcb.fileInfo = &file;
+        fcb.remainingBytes = file.size;
+        fcb.index = 0;
+        fcb.numBlocks = NMOverM(file.size, MINBLOCKSIZE);
+        fcb.fileIndex = find_vacant_space(parent, file.name);
+    }
+    // failed
+    else {
+        return -1;
+    }
+    // consistent stuff among read and write
+    fcb.parent = parent;
+    fcb.buf = malloc(B_CHUNK_SIZE);
+    fcb.buflen = B_CHUNK_SIZE;
+    fcb.activeFlags = flags;
+    int parentInBlocks = NMOverM(parent[0].size, MINBLOCKSIZE);
+    parent[fcb.fileIndex] = file;
+    fileWrite(parent, parentInBlocks, parent[0].location);
+    printf("return FD is: %i\n", returnFd);
+    return returnFd;
 }
 
 
@@ -195,7 +254,7 @@ int b_write (b_io_fd fd, char * buffer, int count) {
 
     // check the flag
     if( fcbArray[fd].activeFlags & O_RDONLY) {
-        printf("b_read: file is read only\n");
+        printf("b_write: file is read only\n");
         return -1;
     }
 
