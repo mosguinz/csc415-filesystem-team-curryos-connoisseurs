@@ -39,7 +39,7 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
     fat = (int *) malloc(blocksNeeded * blockSize );
 	volumeControlBlock = (struct VCB *) malloc(MINBLOCKSIZE);
 	root = (struct DE *) malloc(DE_SIZE);
-	cwdPathName = (char *) malloc(36);
+	cwdPathName = (char *) malloc(512);
 
 	printf ("Initializing File System with %ld blocks \
 		with a block size of %ld\n", numberOfBlocks, blockSize);
