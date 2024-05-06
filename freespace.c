@@ -31,7 +31,6 @@ int initFreespace(uint64_t numberOfBlocks, uint64_t blockSize){
     for( int i = 1; i < numberOfBlocks; i++ ) {
         fat[i] = i+1;
     }
-    printf("\nblocks needed: %i\n", blocksNeeded);
 
     // mark the VCB as used
     fat[0] = 0xFFFFFFFF;
@@ -62,7 +61,6 @@ int getFreeBlocks(uint64_t numberOfBlocks) {
 
     // first free block in the FAT table
     int head = volumeControlBlock->firstBlock;
-    printf("current first block in getfreeblocks: %i\n", head);
     int currBlockLoc = volumeControlBlock->firstBlock;
     int nextBlockLoc = fat[currBlockLoc];
     volumeControlBlock->totalFreeSpace--;
@@ -84,24 +82,18 @@ int getFreeBlocks(uint64_t numberOfBlocks) {
  * @return the number of blocks that were returned. -1 on error
  */
 int returnFreeBlocks(int location){
-    printf("reached the return free blocks method\n");
-    printf("the location: %i\n", location);
-    // TODO: Check if location
     if( location < 1 || location > volumeControlBlock->totalBlocks ) {
-        printf("hit the early return\n");
+        fprintf(stderr, "invalid location\n");
         return -1;
     }
     int currBlockLoc = location;
-    printf("currBlockLoc: %i\n", currBlockLoc);
     int i = 0;
     while( fat[currBlockLoc] != 0xFFFFFFFF ) {
         currBlockLoc = fat[currBlockLoc];
-        // printf("currBlockLoc: %i\n", currBlockLoc);
         i++;
     }
     fat[currBlockLoc] = volumeControlBlock->firstBlock;
     volumeControlBlock->firstBlock = location;
-    printf("vcb first block: %i\n", volumeControlBlock->firstBlock);
     return i;
 }
 /*

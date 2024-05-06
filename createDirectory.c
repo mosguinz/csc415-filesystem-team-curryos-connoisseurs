@@ -53,7 +53,7 @@ int createDirectory(int numberOfEntries, struct DE *parent)
 
 	// Request blocks from freespace system
 	blocksRequested = getFreeBlocks(blockCount);
-	printf("Creating Directory at %d, with size %ld bytes\n", blocksRequested, maxEntryCount * sizeof(struct DE));
+	// printf("Creating Directory at %d, with size %ld bytes\n", blocksRequested, maxEntryCount * sizeof(struct DE));
 
 	// Initialize dot and dot dot entries of the new directory
 	buffer[0].location = blocksRequested;
@@ -81,7 +81,6 @@ int createDirectory(int numberOfEntries, struct DE *parent)
 	}
 	else
 	{
-		printf("Creating a new directory\n");
 		buffer[1].location = parent -> location;
 		buffer[1].size = parent -> size;
 	}
