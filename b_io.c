@@ -92,6 +92,11 @@ b_io_fd b_open (char * filename, int flags){
 		return -1;
 	}
 	parent = parsepathinfo->parent;
+    
+    // Update timestamps for parent folder
+    time_t tm = time(NULL);
+    parent->dateLastAccessed = tm;
+    parent->dateModified = tm;
 
 	// If create flag is set create new file
 	if( flags & O_CREAT ) {
@@ -101,6 +106,9 @@ b_io_fd b_open (char * filename, int flags){
 		fileInfo->location = -1;
 		strncpy(fileInfo->name, parsepathinfo->lastElementName, DE_NAME_SIZE);
 		// Date Fields Populated Here
+        fileInfo->dateCreated = tm;
+        fileInfo->dateLastAccessed = tm;
+        fileInfo->dateModified = tm;
 
 		// Link back to parent directory
 		emptyIndex = find_vacant_space ( parent , parsepathinfo->lastElementName);  // TODO look for duplicates?
