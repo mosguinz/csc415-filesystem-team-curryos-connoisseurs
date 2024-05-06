@@ -44,7 +44,7 @@ int createDirectory(int numberOfEntries, struct DE *parent)
 	buffer[0].location = blocksRequested;
 	buffer[0].size = maxEntryCount * sizeof(struct DE);
 	buffer[0].isDirectory = 1;
-	strncpy(buffer[0].name, ".", DE_NAME_SIZE);
+	strncpy(buffer[0].name, ".", 36);
 
 	// If no parent is passed, initialize root directory @UNSAFE
 	// Cannot handle if root already exists
@@ -64,7 +64,7 @@ int createDirectory(int numberOfEntries, struct DE *parent)
 		buffer[1].location = parent -> location;
 		buffer[1].size = parent -> size;
 	}
-	strncpy(buffer[1].name, "..", DE_NAME_SIZE);
+	strncpy(buffer[1].name, "..", 36);
 	buffer[1].isDirectory = 1;
 
 	// Write newly created directory to disk
