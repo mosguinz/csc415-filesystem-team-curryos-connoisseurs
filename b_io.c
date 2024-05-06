@@ -78,7 +78,7 @@ b_io_fd b_open (char * filename, int flags){
 
 	// Prepare structures for parse path
 	parsepathinfo = malloc(sizeof(struct PPRETDATA));
-	parsepathinfo->parent = malloc(7*MINBLOCKSIZE);
+	parsepathinfo->parent = malloc(DE_SIZE);
 	fileInfo = malloc(MINBLOCKSIZE);
 	memset(fileInfo, 0, MINBLOCKSIZE);
 	if ( !parsepathinfo || !fileInfo ) { // TODO separate malloc checks and free if needed
@@ -99,13 +99,13 @@ b_io_fd b_open (char * filename, int flags){
 		fileInfo->isDirectory = 0;
 		fileInfo->size = 0;
 		fileInfo->location = -1;
-		strncpy(fileInfo->name, parsepathinfo->lastElementName, 28);
+		strncpy(fileInfo->name, parsepathinfo->lastElementName, DE_NAME_SIZE);
 		// Date Fields Populated Here
 
 		// Link back to parent directory
 		emptyIndex = find_vacant_space ( parent , parsepathinfo->lastElementName);  // TODO look for duplicates?
 		parent[emptyIndex] = *fileInfo;
-		strncpy(parent[emptyIndex].name, parsepathinfo->lastElementName, 28);
+		strncpy(parent[emptyIndex].name, parsepathinfo->lastElementName, DE_NAME_SIZE);
 
 		// Write back changes to complete linking
 		parentSize = NMOverM(parent->size, MINBLOCKSIZE);
@@ -137,7 +137,7 @@ b_io_fd b_open (char * filename, int flags){
 		}
 		fileInfo->isDirectory = 0;
 		fileInfo->size = file.size;
-		strncpy(fileInfo->name, file.name, 28);
+		strncpy(fileInfo->name, file.name, DE_NAME_SIZE);
 		fileInfo->dateCreated = file.dateCreated;
 		fileInfo->location = file.location;
 		int numBlocks = NMOverM(fileInfo->size, MINBLOCKSIZE);
