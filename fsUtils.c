@@ -145,22 +145,27 @@ int fs_mv(const char* startpathname, const char* endpathname) {
     }
 
     struct DE* parentDir = startppinfo->parent;
-    struct DE* sourceDir = loadDir(startppinfo->parent, startIndex);
-    endDir[emptyIndex] = parentDir[startIndex];
+    struct DE sourceDir = parentDir[startIndex];
+    endDir[emptyIndex] = sourceDir;
+    if( sourceDir.isDirectory == 1 ) {
+        struct DE* tempDir = loadDir(parentDir, startIndex);
+        tempDir[1] = endDir[0];
+        strncpy(tempDir[1].name, "..", DE_NAME_SIZE);
+        printf("reached the write\n");
+        fileWrite(tempDir, NMOverM(DE_SIZE, MINBLOCKSIZE), tempDir->location);
+        free(tempDir);
+    }
     parentDir[startIndex].location = -2l;
-    sourceDir[1] = endDir[0];
-    strncpy(sourceDir[1].name, "..", DE_NAME_SIZE);
 
-    fileWrite(endDir, NMOverM(endDir->size, MINBLOCKSIZE), endDir->location);
-    fileWrite(parentDir, NMOverM(parentDir->size, MINBLOCKSIZE), parentDir->location);
-    fileWrite(sourceDir, NMOverM(sourceDir->size, MINBLOCKSIZE), sourceDir->location);
+    fileWrite(endDir, NMOverM(DE_SIZE, MINBLOCKSIZE), endDir->location);
+    fileWrite(parentDir, NMOverM(DE_SIZE, MINBLOCKSIZE), parentDir->location);
+
 
     free(startppinfo->parent);
     free(startppinfo);
     free(endppinfo->parent);
     free(endppinfo);
     free(endDir);
-    free(sourceDir);
     return 0;
 }
 
@@ -173,11 +178,6 @@ int fs_mv(const char* startpathname, const char* endpathname) {
  */
 char * fs_getcwd(char *pathname, size_t size){
     strncpy(pathname, cwdPathName, size);
-    printf("the macros\n");
-    printf("DE_SIZE: %i\n", DE_SIZE);
-    printf("DE_NAME_SIZE: %i\n", DE_NAME_SIZE);
-    printf("DECOUNT: %i\n", DECOUNT);
-    printf("DEFAULT_DIR_SIZE: %i\n", DEFAULTDIRSIZE);
     return cwdPathName;
 }
 
@@ -400,10 +400,10 @@ void printDE(struct DE* directory) {
     printf ("|------- Variable ------|-------- Value --------|\n");
     printf ("| name             | %-26s|\n", directory->name);
     printf ("| size             | %-26i|\n", directory->size);
-    printf ("| location         | %-26li|\n", directory->location);
+    printf ("| location         | %-26i|\n", directory->location);
     printf ("| is directory     | %-26i|\n", directory->isDirectory);
-    printf ("| date created     | %-26i|\n", directory->dateCreated);
-    printf ("| date modified    | %-26i|\n", directory->dateModified);
+    printf ("| date created     | %-26li|\n", directory->dateCreated);
+    printf ("| date modified    | %-26li|\n", directory->dateModified);
     printf ("|-----------------------------------------------|\n");
 }
 
