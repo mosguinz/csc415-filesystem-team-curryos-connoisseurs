@@ -291,7 +291,7 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp){
         entry = entries[++dirp->index];
     }
 
-    if (dirp->index > DECOUNT-1) {
+    if (dirp->index == DECOUNT-1) {
         free(entries);
         return NULL;
     }
@@ -311,7 +311,6 @@ int fs_stat(const char *pathname, struct fs_stat *buf) {
     int res = parsePath(pathname, ppinfo);
 
     if (res == -1) {
-        fprintf(stderr, "no such file or directory: %s\n", pathname);
         return -1;
     }
 
@@ -349,7 +348,6 @@ fdDir * fs_opendir(const char *pathname) {
     int res = parsePath(pathname, ppinfo);
 
     if (res == -1) {
-        fprintf(stderr, "no such file or directory: %s\n", pathname);
         return NULL;
     }
 
