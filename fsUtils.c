@@ -34,22 +34,18 @@ int findInDir(struct DE* searchDirectory, char* name){
  * @return the index of the DE or -1 if not found or if a file/directory with that name already exists TODO: Allow files/directories to have same name?
  */
 int find_vacant_space ( struct DE * directory , char * fileName){
-    int index;          // Index for potential new element
-    index = -1;
 	for (int i = 0 ; i < (directory->size)/sizeof(struct DE) ; i++ ) {
-		if ( (directory + i)->location == -2 )
-			index = i;
-        if ( strcmp(fileName, (directory +i)->name) == 0) {
-                perror("Duplicate found");
-                return -1;
-            }
-        }
-    if ( index == -1){
-        perror("Directory is full");
-	    return -1;
-    }
-    return index;
-	
+		if ( strcmp(fileName, (directory +i)->name) == 0) {
+			perror("Duplicate found");
+			return -1;
+		}
+		if ( (directory + i)->location == -2 ){
+			printf("%s\n%s\n", fileName, (directory+i)->name);
+			return i;
+		}
+	}
+	perror("Directory is full");
+	return -1;
 }
 
 /*
