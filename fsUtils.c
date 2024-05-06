@@ -48,14 +48,14 @@ int findInDir(struct DE* searchDirectory, char* name){
 int find_vacant_space ( struct DE * directory , char * fileName){
 	for (int i = 0 ; i < (directory->size)/sizeof(struct DE) ; i++ ) {
 		if ( strcmp(fileName, (directory +i)->name) == 0) {
-			perror("Duplicate found");
+			fprintf(stderr, "Duplicate found");
 			return -1;
 		}
 		if ( (directory + i)->location == -2 ){
 			return i;
 		}
 	}
-	perror("Directory is full");
+	fprintf(stderr, "Directory is full");
 	return -1;
 }
 
@@ -67,7 +67,7 @@ int find_vacant_space ( struct DE * directory , char * fileName){
  * @return the loaded directory (needs to be freed)
  */
 struct DE* loadDir(struct DE* searchDirectory, int index) {
-    int size = NMOverM(searchDirectory[index].size, volumeControlBlock->blockSize);
+    int size = NMOverM(DE_SIZE, MINBLOCKSIZE);
     int loc = searchDirectory[index].location;
     struct DE* directories = (struct DE*)malloc(DE_SIZE);
     int res = fileRead(directories, size, loc);
@@ -90,8 +90,6 @@ int fs_isDir(char * pathname){
         return 0;
     }
 
-
-    // struct DE* dir = loadDir(ppinfo->parent, ppinfo->lastElementIndex);
     int returnStatement = ppinfo->parent[ppinfo->lastElementIndex].isDirectory;
     free(ppinfo->parent);
     free(ppinfo);
@@ -101,17 +99,10 @@ int fs_isDir(char * pathname){
 //return 1 if file, 0 otherwise
 int fs_isFile(char * filename){
 	int index = findInDir(cwd, filename);
-	return !cwd[index].isDirectory;
-}
-
-void printCurrDir() {
-    struct DE* searchDirectory = loadDir(cwd, 0);
-    for( int i = 0; i < DECOUNT; i++) {
-        if(searchDirectory[i].location != -2l ) {
-            printf("name of directory: %s\n", searchDirectory[i].name);
-        }
+    if( index == -1 ) {
+        return -1;
     }
-    free(searchDirectory);
+	return !cwd[index].isDirectory;
 }
 
 /*
@@ -170,7 +161,6 @@ int fs_mv(const char* startpathname, const char* endpathname) {
 
     fileWrite(endDir, NMOverM(DE_SIZE, MINBLOCKSIZE), endDir->location);
     fileWrite(parentDir, NMOverM(DE_SIZE, MINBLOCKSIZE), parentDir->location);
-
 
     free(startppinfo->parent);
     free(startppinfo);
@@ -270,7 +260,6 @@ int fs_setcwd(char *pathname){
     cwdPathName = cleanPath(cwdPathName);
     int size = NMOverM(cwd->size, MINBLOCKSIZE);
     fileWrite(cwd, size, cwd->location);
-    printCurrDir();
     return 0;
 }
 
@@ -281,7 +270,7 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp){
     struct DE entry = entries[dirp->index];
 
     if (res == -1) {
-        perror("Could not load entry\n");
+        fprintf(stderr, "Could not load entry\n");
         free(entries);
         return NULL;
     }
@@ -334,7 +323,7 @@ int fs_stat(const char *pathname, struct fs_stat *buf) {
 int fs_closedir(fdDir *dirp) {
 
     if (dirp == NULL) {
-        perror("Cannot close directory, is null\n");
+        fprintf(stderr, "Cannot close directory, is null\n");
         return 0;
     }
 
@@ -383,8 +372,6 @@ fdDir * fs_opendir(const char *pathname) {
     return fd;
 }
 
-
-
 /*
  * method to help with debugging. prints VCB block
  */
@@ -432,8 +419,6 @@ void printFCB(b_fcb fcb){
     printf ("| currentBlock          | %-22i|\n", fcb.currentBlock);
     printf ("| remainingBytes        | %-22i|\n", fcb.remainingBytes);
     printf ("|-----------------------------------------------|\n");
-    // printf("the buffer:\n%s\n", fcb.buf);
-    // printDE(fcb.fileInfo);
 }
 
 //removes a file
@@ -460,24 +445,6 @@ int fs_delete(char* filename){
     free(ppinfo->parent);
     free(ppinfo);
     return 0;
-}
-
-void clearDir(struct DE* dir) {
-    int location = dir->location;
-    for(int i=2; i < DECOUNT; i++) {
-        if(dir[i].location > 0 && dir[i].isDirectory == 1) {
-            struct DE* currDir = loadDir(dir, i);
-            clearDir(currDir);
-            free(currDir);
-        }
-        if( dir[i].location > 0 && dir[i].isDirectory == 0) {
-            returnFreeBlocks(dir[i].location);
-            dir[i].location = (long)-2;
-        }
-    }
-    returnFreeBlocks(location);
-    int size = NMOverM(dir->size, MINBLOCKSIZE);
-    fileWrite(dir, size, location);
 }
 
 int isEmpty(struct DE* dir) {

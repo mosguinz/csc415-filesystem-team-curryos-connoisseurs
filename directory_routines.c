@@ -39,7 +39,7 @@ int fs_mkdir (const char *pathname, mode_t mode){
 	}
 
 	if( parsePath(pathname, parsepathinfo) == -1 ) {
-        printf("invalid path\n");
+        fprintf(stderr, "invalid path\n");
         return -1;
     }
 	// Read all relevant data from parsepath needed for directory creation
@@ -47,20 +47,20 @@ int fs_mkdir (const char *pathname, mode_t mode){
 	directoryName = parsepathinfo->lastElementName;
 	emptyIndex = find_vacant_space ( parent , directoryName);
 	if ( emptyIndex == -1){
-		perror("Find Vacant Space");
+		fprintf("error in Find Vacant Space\n");
 		return -1;
 	}
 
 	// Create and link new directory to an empty position in parent array
 	ret = createDirectory(DEFAULTDIRSIZE, parent);
 	if ( ret == -1 ){
-		perror("Create Directory");
+		fprintf(stderr, "error in Create Directory\n");
 		return -1;
 	}
 	memset(newDirectory, 0, MINBLOCKSIZE);
 	ret = fileRead(newDirectory, 1, ret);
 	if ( ret == -1){
-		perror("File Read");
+		fprintf(stderr, "error in File Read\n");
 		return -1;
 	}
 	parent[emptyIndex] = newDirectory[0];

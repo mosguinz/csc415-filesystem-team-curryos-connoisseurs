@@ -72,7 +72,7 @@ b_io_fd b_open (char * filename, int flags){
 	if (startup == 0) b_init();         //Initialize our system
 	returnFd = b_getFCB();          // get our own file descriptor
 	if ( returnFd == -2 ){
-		perror("getFCB");
+		fprintf(stderr, "error in getFCB\n");
 		return returnFd;
 	}
 
@@ -88,7 +88,7 @@ b_io_fd b_open (char * filename, int flags){
 
 	// Parse through input string and retrieve parent structure and file name
 	if ( parsePath(filename, parsepathinfo) == -1 ) {
-		perror("Parse Path");
+		fprintf(stderr, "error in Parse Path\n");
 		return -1;
 	}
 	parent = parsepathinfo->parent;
@@ -125,12 +125,12 @@ b_io_fd b_open (char * filename, int flags){
 	}
 	else {
 		if(parsepathinfo->lastElementIndex == -1) {
-			perror("invalid path\n");
+			fprintf(stderr, "invalid path\n");
 			return -1;
 		}
 		struct DE file = parent[parsepathinfo->lastElementIndex];
 		if(file.isDirectory == 1) {
-			perror("cannot open a directory\n");
+			fprintf(stderr, "cannot open a directory\n");
 			free(parsepathinfo->parent);
 			free(parsepathinfo);
 			return -1;
