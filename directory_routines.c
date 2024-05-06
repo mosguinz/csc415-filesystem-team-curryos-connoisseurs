@@ -1,3 +1,16 @@
+/**************************************************************
+* Class::  CSC-415-03 Spring 2024
+* Name:: Arjun Gill, Mos Kullathon, Vignesh Guruswami, Sid Padmanabhuni
+* Student IDs:: 922170168
+* GitHub-Name:: ArjunS132
+* Group-Name:: Curry OS Connoisseurs
+* Project:: Basic File System
+*
+* File:: directory_routines.c
+*
+* Description:: fs mkdir method
+*
+**************************************************************/
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>

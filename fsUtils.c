@@ -1,3 +1,16 @@
+/**************************************************************
+* Class::  CSC-415-03 Spring 2024
+* Name:: Arjun Gill, Mos Kullathon, Vignesh Guruswami, Sid Padmanabhuni
+* Student IDs:: 922170168
+* GitHub-Name:: ArjunS132
+* Group-Name:: Curry OS Connoisseurs
+* Project:: Basic File System
+*
+* File:: fsUtils.h
+*
+* Description:: C file for utility functions
+*
+**************************************************************/
 #include "fsUtils.h"
 #include "freespace.h"
 #include "fs_control.h"

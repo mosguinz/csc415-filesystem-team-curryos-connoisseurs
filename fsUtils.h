@@ -1,3 +1,16 @@
+/**************************************************************
+* Class::  CSC-415-0# Spring 2024
+* Name:: Arjun Gill, Mos Kullathon, Vignesh Guruswami, Sid Padmanabhuni
+* Student IDs:: 922170168
+* GitHub-Name:: ArjunS132
+* Group-Name:: Curry OS Connoisseurs
+* Project:: Basic File System
+*
+* File:: fsUtils.h
+*
+* Description:: header file for utility functions
+*
+**************************************************************/
 #ifndef _FSUTILS
 #define _FSUTILS
 #include "fs_control.h"
