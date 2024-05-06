@@ -1,5 +1,12 @@
 #ifndef _FSCTL
 #define _FSCTL
+#include <time.h>
+
+#define DE_NAME_SIZE 28
+#define DEFAULTDIRSIZE 56
+#define DE_SIZE DEFAULTDIRSIZE * sizeof(struct DE)
+#define DECOUNT ((DE_SIZE) / sizeof(struct DE))
+
 // Specifications for volume control block
 struct VCB
 {
@@ -19,16 +26,16 @@ struct DE
 {
 	/* location set to -2 for unused directory entry,
 	 * location set to positive non-zero value if in use */
-	long location;
+	int location;
 	int size;	// Size in bytes
 
 	// Metadata
-	int dateCreated;
-	int dataModified;
-	int dateLastAccessed;
+	time_t dateCreated;
+	time_t dataModified;
+	time_t dateLastAccessed;
 
 	int isDirectory; // 1 for directories 0 for non-directories
-	char name[36];
+	char name[DE_NAME_SIZE];
 };
 
 // Specifications for parsepath return data
