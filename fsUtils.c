@@ -73,8 +73,11 @@ int fs_isDir(char * pathname){
     int res = parsePath(pathname, ppinfo);
 
     if (res == -1 || ppinfo->lastElementIndex < 0) {
+        free(ppinfo->parent);
+        free(ppinfo);
         return 0;
     }
+
 
     struct DE* dir = loadDir(ppinfo->parent, ppinfo->lastElementIndex);
     int returnStatement = dir->isDirectory;
@@ -87,11 +90,7 @@ int fs_isDir(char * pathname){
 //return 1 if file, 0 otherwise
 int fs_isFile(char * filename){
 	int index = findInDir(cwd, filename);
-	struct DE* dir = loadDir(cwd, index);
-	int returnStatement = dir->isDirectory;
-	free(dir);
-	printf("%d\n", returnStatement);
-	return !returnStatement;
+	return !cwd[index].isDirectory;
 }
 
 void printCurrDir() {
@@ -359,8 +358,8 @@ fdDir * fs_opendir(const char *pathname) {
         fprintf(stderr, "%s is not a directory\n", pathname);
         return NULL;
     }
-    
-    fdDir *fd = malloc(sizeof(fdDir));    
+
+    fdDir *fd = malloc(sizeof(fdDir));
 
     fd->d_reclen = NMOverM(entry.size, volumeControlBlock->blockSize);
     fd->dirEntryPosition = index;
@@ -372,7 +371,7 @@ fdDir * fs_opendir(const char *pathname) {
     fd->di->d_reclen = NMOverM(entry.size, volumeControlBlock->blockSize);
     fd->di->fileType = entry.isDirectory;
     strcpy(fd->di->d_name, lastElementName);
-    
+
     free(ppinfo->parent);
     free(ppinfo);
     return fd;
