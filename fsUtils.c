@@ -554,7 +554,7 @@ int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
     struct DE* prevDirectory = malloc(DE_SIZE);
     memcpy(prevDirectory, currDirectory, DE_SIZE);
     int index = findInDir(prevDirectory, currToken);
-    if(index != -1) {
+    if(index != -1 && prevDirectory[index].isDirectory) {
         currDirectory = loadDir(prevDirectory, index);
     }
     char* prevToken = currToken;
@@ -575,8 +575,11 @@ int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
                 return -1;
             }
         }
-        else {
+        else if(prevDirectory[index].isDirectory) {
             currDirectory = loadDir(prevDirectory, index);
+        }
+        else {
+            return -1;
         }
     }
     memcpy(ppinfo->parent, prevDirectory, DE_SIZE);
