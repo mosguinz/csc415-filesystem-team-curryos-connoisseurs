@@ -79,11 +79,10 @@ int fs_isDir(char * pathname){
     }
 
 
-    struct DE* dir = loadDir(ppinfo->parent, ppinfo->lastElementIndex);
-    int returnStatement = dir->isDirectory;
+    // struct DE* dir = loadDir(ppinfo->parent, ppinfo->lastElementIndex);
+    int returnStatement = ppinfo->parent[ppinfo->lastElementIndex].isDirectory;
     free(ppinfo->parent);
     free(ppinfo);
-    free(dir);
     return returnStatement;
 }
 
