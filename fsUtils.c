@@ -337,7 +337,6 @@ int fs_stat(const char *pathname, struct fs_stat *buf) {
     char* lastElementName = getLastElement(pathname);
     int index = findInDir(ppinfo->parent, lastElementName);
     if (index == -1) {
-        fprintf(stderr, "%s not found\n", ppinfo->lastElementName);
         return -1;
     }
 
