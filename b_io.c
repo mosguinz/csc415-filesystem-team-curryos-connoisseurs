@@ -172,7 +172,6 @@ b_io_fd b_open (char * filename, int flags){
     int parentInBlocks = NMOverM(DE_SIZE, MINBLOCKSIZE);
     parent[fcb.fileIndex] = *fcb.fileInfo;
     fileWrite(parent, parentInBlocks, parent[0].location);
-    printf("return FD is: %i\n", returnFd);
     fcbArray[returnFd] = fcb;
     return returnFd;
 }
