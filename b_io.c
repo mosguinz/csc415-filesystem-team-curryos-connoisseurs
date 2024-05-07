@@ -97,72 +97,10 @@ b_io_fd b_open (char * filename, int flags){
 
     b_fcb fcb = fcbArray[returnFd];
     fcb.fileInfo = malloc(sizeof(struct DE));
-
-    // // If create flag is set create new file
-    // if( parsepathinfo->lastElementIndex < 0 && flags & O_CREAT ) {
-    //     // Populate Directory Entry of new file leave location empty
-    //     fileInfo->isDirectory = 0;
-    //     fileInfo->size = 0;
-    //     fileInfo->location = -1;
-    //     strncpy(fileInfo->name, parsepathinfo->lastElementName, DE_NAME_SIZE);
-    //     // Date Fields Populated Here
-
-    //     // Link back to parent directory
-    //     emptyIndex = find_vacant_space ( parent , parsepathinfo->lastElementName);  // TODO look for duplicates?
-    //     parent[emptyIndex] = *fileInfo;
-    //     strncpy(parent[emptyIndex].name, parsepathinfo->lastElementName, DE_NAME_SIZE);
-
-    //     // Write back changes to complete linking
-    //     parentSize = NMOverM(parent->size, MINBLOCKSIZE);
-    //     fileWrite(parent, parentSize, parent->location);
-    //     fcbArray[returnFd].fileIndex = emptyIndex;
-    //     fcbArray[returnFd].parent = parent;
-    //     fcbArray[returnFd].fileInfo = fileInfo;
-    //     fcbArray[returnFd].buf = malloc(B_CHUNK_SIZE);
-    //     fcbArray[returnFd].index = 0;
-    //     fcbArray[returnFd].buflen = B_CHUNK_SIZE;
-    //     fcbArray[returnFd].numBlocks = 0;
-    //     fcbArray[returnFd].currentBlock = -1;
-    //     fcbArray[returnFd].activeFlags = flags;
-    //     fcbArray[returnFd].remainingBytes = 0;
-    //     b_fcb fcb = fcbArray[returnFd];
-    //     return returnFd;
-    // }
-    // else {
-    //     if(parsepathinfo->lastElementIndex == -1) {
-    //         fprintf(stderr, "invalid path\n");
-    //         return -1;
-    //     }
-    //     struct DE file = parent[parsepathinfo->lastElementIndex];
-    //     if(file.isDirectory == 1) {
-    //         fprintf(stderr, "cannot open a directory\n");
-    //         free(parsepathinfo->parent);
-    //         free(parsepathinfo);
-    //         return -1;
-    //     }
-    //     fileInfo->isDirectory = 0;
-    //     fileInfo->size = file.size;
-    //     strncpy(fileInfo->name, file.name, DE_NAME_SIZE);
-    //     fileInfo->dateCreated = file.dateCreated;
-    //     fileInfo->location = file.location;
-    //     int numBlocks = NMOverM(fileInfo->size, MINBLOCKSIZE);
-    //     fcbArray[returnFd].index = 0;
-    //     fcbArray[returnFd].numBlocks = numBlocks;
-    //     fcbArray[returnFd].fileInfo = fileInfo;
-    //     fcbArray[returnFd].buf = malloc(B_CHUNK_SIZE);
-    //     fcbArray[returnFd].buflen = B_CHUNK_SIZE;
-    //     fcbArray[returnFd].remainingBytes = file.size;
-    //     fcbArray[returnFd].currentBlock = file.location;
-    //     fcbArray[returnFd].parent = parent;
-    //     fcbArray[returnFd].activeFlags = flags;
-    //     free(parsepathinfo);
-    //     printf("finished opening fd\n");
-    //     return returnFd;
-    // }
+    fcb.buf = malloc(B_CHUNK_SIZE);
 
     // read an existing file
     if( flags & O_RDONLY && ppinfo->lastElementIndex > 0 ) {
-        printf("hit the read case\n");
         file = ppinfo->parent[ppinfo->lastElementIndex];
         strncpy(fcb.fileInfo->name, file.name, DE_NAME_SIZE);
         fcb.fileInfo->size = file.size;
@@ -179,7 +117,6 @@ b_io_fd b_open (char * filename, int flags){
     }
     // write an already created file
     else if( ppinfo->lastElementIndex > 0) {
-        printf("hit the write existing file case\n");
         file = ppinfo->parent[ppinfo->lastElementIndex];
         strncpy(fcb.fileInfo->name, file.name, DE_NAME_SIZE);
         fcb.fileInfo->size = file.size;
@@ -196,11 +133,13 @@ b_io_fd b_open (char * filename, int flags){
         fcb.fileIndex = ppinfo->lastElementIndex;
         // offset the file if it needs to be truncated
         if(flags & O_TRUNC) {
+            fcb.currentBlock = fileSeek(fcb.currentBlock, fcb.numBlocks);
+            fcb.index = file.size % B_CHUNK_SIZE;
+            fileRead(fcb.buf, 1, fcb.currentBlock);
         }
     }
     // write a new file
     else if(flags & O_CREAT) {
-        printf("hit the create for touch\n");
         strncpy(file.name, ppinfo->lastElementName, DE_NAME_SIZE);
         file.size = 0;
         file.location = -1;
@@ -216,11 +155,11 @@ b_io_fd b_open (char * filename, int flags){
     }
     // failed
     else {
+        free(fcb.buf);
         return -1;
     }
     // consistent stuff among read and write
     fcb.parent = parent;
-    fcb.buf = malloc(B_CHUNK_SIZE);
     fcb.buflen = B_CHUNK_SIZE;
     fcb.activeFlags = flags;
     strncpy(fcb.fileInfo->name, file.name, DE_NAME_SIZE);
@@ -459,4 +398,6 @@ int b_close (b_io_fd fd)
 {
     free(fcbArray[fd].buf);
     fcbArray[fd].fileInfo = NULL;
+    fcbArray[fd].buf = NULL;
+    return 0;
 }

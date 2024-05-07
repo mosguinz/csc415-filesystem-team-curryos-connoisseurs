@@ -117,7 +117,7 @@ int fs_mv(const char* startpathname, const char* endpathname) {
     startppinfo->parent = malloc( DE_SIZE );
     int startRes = parsePath(startpathname, startppinfo);
     int startIndex = startppinfo->lastElementIndex;
-    if( startRes == -1 || startIndex == -1 ) {
+    if( startRes == -1 || startIndex < 2) {
         free(startppinfo->parent);
         free(startppinfo);
         return -1;
