@@ -1,9 +1,9 @@
 /**************************************************************
-* Class::  CSC-415-0# Spring 024
-* Name::
-* Student IDs::
-* GitHub-Name::
-* Group-Name::
+* Class::  CSC-415-03 Spring 2024
+* Name:: Arjun Gill, Mos Kullathon, Vignesh Guruswami, Sid Padmanabhuni
+* Student IDs:: 922170168
+* GitHub-Name:: ArjunS132
+* Group-Name:: Curry OS Connoisseurs
 * Project:: Basic File System
 *
 * File:: fsInit.c
@@ -34,16 +34,12 @@ char * cwdPathName;
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 	long const 		VCBSIGNATURE = 8357492010847392157;
 	struct VCB * 		buffer;
-    // this variable isn't used. delete the lines if they are extra. LOVE ARJUN
-	// int 			freeSpaceBlocks;
 
-	// freeSpaceBlocks =
-	// 	((numberOfBlocks + MINBLOCKSIZE - 1) / MINBLOCKSIZE );
     int blocksNeeded = NMOverM(sizeof(int)*numberOfBlocks, blockSize);
     fat = (int *) malloc(blocksNeeded * blockSize );
 	volumeControlBlock = (struct VCB *) malloc(MINBLOCKSIZE);
-	root = (struct DE *) malloc(7 * MINBLOCKSIZE);
-	cwdPathName = (char *) malloc(36);
+	root = (struct DE *) malloc(DE_SIZE);
+	cwdPathName = (char *) malloc(512);
 
 	printf ("Initializing File System with %ld blocks \
 		with a block size of %ld\n", numberOfBlocks, blockSize);
@@ -75,7 +71,6 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize){
 	}
 	fs_setcwd("/");
 	strncpy(cwdPathName, "/", 36);
-	printf("Setting CWD to %s\n", cwdPathName);
 
 	free(buffer);
 

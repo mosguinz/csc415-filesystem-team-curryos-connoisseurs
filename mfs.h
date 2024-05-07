@@ -1,9 +1,9 @@
 /**************************************************************
-* Class::  CSC-415-0# Spring 2024
-* Name::
-* Student IDs::
-* GitHub-Name::
-* Group-Name::
+* Class::  CSC-415-03 Spring 2024
+* Name:: Arjun Gill, Mos Kullathon, Vignesh Guruswami, Sid Padmanabhuni
+* Student IDs:: 922170168
+* GitHub-Name:: ArjunS132
+* Group-Name:: Curry OS Connoisseurs
 * Project:: Basic File System
 *
 * File:: mfs.h
@@ -42,7 +42,7 @@ typedef u_int32_t uint32_t;
 struct fs_diriteminfo
 	{
     unsigned short d_reclen;    /* length of this record */
-    unsigned int fileType;    
+    unsigned int fileType;
     char d_name[256]; 			/* filename max filename is 255 characters */
 	};
 

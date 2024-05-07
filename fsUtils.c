@@ -1,3 +1,16 @@
+/**************************************************************
+* Class::  CSC-415-03 Spring 2024
+* Name:: Arjun Gill, Mos Kullathon, Vignesh Guruswami, Sid Padmanabhuni
+* Student IDs:: 922170168
+* GitHub-Name:: ArjunS132
+* Group-Name:: Curry OS Connoisseurs
+* Project:: Basic File System
+*
+* File:: fsUtils.h
+*
+* Description:: C file for utility functions
+*
+**************************************************************/
 #include "fsUtils.h"
 #include "freespace.h"
 #include "fs_control.h"
@@ -8,6 +21,22 @@
 
 int NMOverM(int n, int m){
     return (n+m-1)/m;
+}
+
+/** Workaround to get the last element in a path. */
+const char* getLastElement(const char* path) {
+    if (strlen(path) == 1 && path[0] == '/') return ".";
+    const char* lastSlash = strrchr(path, '/');
+    if (lastSlash) {
+        // Check path ends with slash
+        if (*(lastSlash + 1) == '\0') {
+            char* p = strdup(path);
+            p[strlen(p) - 1] = '\0';
+            lastSlash = strrchr(p, '/');
+        }
+        return lastSlash + 1;
+    }
+    return path;
 }
 
 /*
@@ -33,11 +62,17 @@ int findInDir(struct DE* searchDirectory, char* name){
  * @param directory the DE that is being searched
  * @return the index of the DE or -1 if not found
  */
-int find_vacant_space ( struct DE * directory ){
-	for ( int i = 0 ; i < (directory->size)/sizeof(struct DE) ; i++ )
-		if ( (directory + i)->location == -2 )
+int find_vacant_space ( struct DE * directory , char * fileName){
+	for (int i = 0 ; i < (directory->size)/sizeof(struct DE) ; i++ ) {
+		if ( strcmp(fileName, (directory +i)->name) == 0) {
+			fprintf(stderr, "Duplicate found");
+			return -1;
+		}
+		if ( (directory + i)->location == -2 ){
 			return i;
-	perror("Directory is full");
+		}
+	}
+	fprintf(stderr, "Directory is full");
 	return -1;
 }
 
@@ -49,7 +84,7 @@ int find_vacant_space ( struct DE * directory ){
  * @return the loaded directory (needs to be freed)
  */
 struct DE* loadDir(struct DE* searchDirectory, int index) {
-    int size = NMOverM(searchDirectory[index].size, volumeControlBlock->blockSize);
+    int size = NMOverM(DE_SIZE, MINBLOCKSIZE);
     int loc = searchDirectory[index].location;
     struct DE* directories = (struct DE*)malloc(7 * 512);
     int res = fileRead(directories, size, loc);
@@ -67,41 +102,24 @@ int fs_isDir(char * pathname){
     int res = parsePath(pathname, ppinfo);
 
     if (res == -1 || ppinfo->lastElementIndex < 0) {
+        free(ppinfo->parent);
+        free(ppinfo);
         return 0;
     }
 
-    struct DE* dir = loadDir(ppinfo->parent, ppinfo->lastElementIndex);
-    int returnStatement = dir->isDirectory;
+    int returnStatement = ppinfo->parent[ppinfo->lastElementIndex].isDirectory;
     free(ppinfo->parent);
     free(ppinfo);
-    free(dir);
     return returnStatement;
 }
 
 //return 1 if file, 0 otherwise
 int fs_isFile(char * filename){
-    int index = findInDir(cwd, filename);
-    struct DE* dir = loadDir(cwd, index);
-    int returnStatement = dir->isDirectory;
-    free(dir);
-    return returnStatement;
-    // TODO: Remove this once DE.isDirectory is flipped.
-    // if( returnStatement == 1 ) {
-    //     return 0;
-    // } else if( returnStatement == 0 ){
-    //     return 1;
-    // }
-    // return -1;
-}
-
-void printCurrDir() {
-    struct DE* searchDirectory = loadDir(cwd, 0);
-    for( int i = 0; i < DECOUNT; i++) {
-        if(searchDirectory[i].location != -2l ) {
-            printf("name of directory: %s\n", searchDirectory[i].name);
-        }
+	int index = findInDir(cwd, filename);
+    if( index == -1 ) {
+        return -1;
     }
-    free(searchDirectory);
+	return !cwd[index].isDirectory;
 }
 
 /*
@@ -116,7 +134,7 @@ int fs_mv(const char* startpathname, const char* endpathname) {
     startppinfo->parent = malloc( 7 * 512 );
     int startRes = parsePath(startpathname, startppinfo);
     int startIndex = startppinfo->lastElementIndex;
-    if( startRes == -1 || startIndex == -1 ) {
+    if( startRes == -1 || startIndex < 2) {
         free(startppinfo->parent);
         free(startppinfo);
         return -1;
@@ -135,8 +153,13 @@ int fs_mv(const char* startpathname, const char* endpathname) {
     }
 
     struct DE* endDir = loadDir(endppinfo->parent, endIndex);
-
-    int emptyIndex = find_vacant_space(endDir);
+    int emptyIndex = findInDir(endDir, startppinfo->lastElementName);
+    if( emptyIndex == -1) {
+        emptyIndex = find_vacant_space(endDir, startppinfo->lastElementName);
+    }
+    else if(endDir[emptyIndex].location > 0){
+        returnFreeBlocks(endDir[emptyIndex].location);
+    }
     if(emptyIndex == -1) {
         free(startppinfo->parent);
         free(startppinfo);
@@ -147,22 +170,25 @@ int fs_mv(const char* startpathname, const char* endpathname) {
     }
 
     struct DE* parentDir = startppinfo->parent;
-    struct DE* sourceDir = loadDir(startppinfo->parent, startIndex);
-    endDir[emptyIndex] = parentDir[startIndex];
+    struct DE sourceDir = parentDir[startIndex];
+    endDir[emptyIndex] = sourceDir;
+    if( sourceDir.isDirectory == 1 ) {
+        struct DE* tempDir = loadDir(parentDir, startIndex);
+        tempDir[1] = endDir[0];
+        strncpy(tempDir[1].name, "..", DE_NAME_SIZE);
+        fileWrite(tempDir, NMOverM(DE_SIZE, MINBLOCKSIZE), tempDir->location);
+        free(tempDir);
+    }
     parentDir[startIndex].location = -2l;
-    sourceDir[1] = endDir[0];
-    strncpy(sourceDir[1].name, "..", 28);
 
-    fileWrite(endDir, NMOverM(endDir->size, MINBLOCKSIZE), endDir->location);
-    fileWrite(parentDir, NMOverM(parentDir->size, MINBLOCKSIZE), parentDir->location);
-    fileWrite(sourceDir, NMOverM(sourceDir->size, MINBLOCKSIZE), sourceDir->location);
+    fileWrite(endDir, NMOverM(DE_SIZE, MINBLOCKSIZE), endDir->location);
+    fileWrite(parentDir, NMOverM(DE_SIZE, MINBLOCKSIZE), parentDir->location);
 
     free(startppinfo->parent);
     free(startppinfo);
     free(endppinfo->parent);
     free(endppinfo);
     free(endDir);
-    free(sourceDir);
     return 0;
 }
 
@@ -174,8 +200,19 @@ int fs_mv(const char* startpathname, const char* endpathname) {
  * @return the path of the current working directory
  */
 char * fs_getcwd(char *pathname, size_t size){
+    printCurrDir();
     strncpy(pathname, cwdPathName, size);
     return cwdPathName;
+}
+
+void printCurrDir() {
+    struct DE* searchDirectory = loadDir(cwd, 0);
+    for( int i = 0; i < DECOUNT; i++) {
+        if(searchDirectory[i].location != -2l ) {
+            printf("name of directory: %s\n", searchDirectory[i].name);
+        }
+    }
+    free(searchDirectory);
 }
 
 /*
@@ -235,7 +272,6 @@ int fs_setcwd(char *pathname){
         return 0;
     }
     if( res == -1 || ppinfo->lastElementIndex == -1){
-        printf("fail 1\n");
         free(ppinfo->parent);
         free(ppinfo);
         return -1;
@@ -244,7 +280,6 @@ int fs_setcwd(char *pathname){
     dir = loadDir(ppinfo->parent, ppinfo->lastElementIndex);
     if( dir->isDirectory != 1 ) {
         free(dir);
-        printf("fail 2\n");
         return -1;
     }
     memcpy(cwd, dir, 7 * 512);
@@ -258,26 +293,30 @@ int fs_setcwd(char *pathname){
     cwdPathName = cleanPath(cwdPathName);
     int size = NMOverM(cwd->size, MINBLOCKSIZE);
     fileWrite(cwd, size, cwd->location);
-    printCurrDir();
     return 0;
 }
 
 struct fs_diriteminfo *fs_readdir(fdDir *dirp){
-  int num_blocks = NMOverM(sizeof(struct DE) * DECOUNT, volumeControlBlock->blockSize);
-  struct DE* entries = malloc(num_blocks * volumeControlBlock->blockSize);
-  int res = fileRead(entries, num_blocks, dirp->dirEntryLocation);
-  struct DE entry = entries[dirp->index];
+    int num_blocks = NMOverM(sizeof(struct DE) * DECOUNT, volumeControlBlock->blockSize);
+    struct DE* entries = malloc(num_blocks * volumeControlBlock->blockSize);
+    int res = fileRead(entries, num_blocks, dirp->dirEntryLocation);
+    struct DE entry = entries[dirp->index];
 
-  if (res == -1) {
-    perror("Could not load entry\n");
-    free(entries);
-    return NULL;
-  }
-  if (dirp->index == DECOUNT-1 || entry.location == -2l) {
-    printf("Exiting, index is %i. Entry location at %d\n", dirp->index, entry.location);
-    free(entries);
-    return NULL;
-  }
+    if (res == -1) {
+        fprintf(stderr, "Could not load entry\n");
+        free(entries);
+        return NULL;
+    }
+
+    // Skip empty entries
+    while (dirp->index < DECOUNT-1 && entry.location == -2l) {
+        entry = entries[++dirp->index];
+    }
+
+    if (dirp->index == DECOUNT-1) {
+        free(entries);
+        return NULL;
+    }
 
   dirp->di->d_reclen = dirp->d_reclen;
   dirp->di->fileType = entry.isDirectory;
@@ -295,11 +334,11 @@ int fs_stat(const char *pathname, struct fs_stat *buf) {
     printf("in fs_stat\n");
 
     if (res == -1) {
-        fprintf(stderr, "no such file or directory: %s\n", pathname);
         return -1;
     }
 
-    int index = findInDir(ppinfo->parent, ppinfo->lastElementName);
+    char* lastElementName = getLastElement(pathname);
+    int index = findInDir(ppinfo->parent, lastElementName);
     if (index == -1) {
         fprintf(stderr, "%s not found\n", ppinfo->lastElementName);
         return -1;
@@ -310,7 +349,7 @@ int fs_stat(const char *pathname, struct fs_stat *buf) {
     buf->st_blksize = volumeControlBlock->blockSize;
     buf->st_blocks = NMOverM(entry.size, volumeControlBlock->blockSize);
     buf->st_accesstime = entry.dateLastAccessed;
-    buf->st_modtime = entry.dataModified;
+    buf->st_modtime = entry.dateModified;
     buf->st_createtime = entry.dateLastAccessed;
 
     return index;
@@ -319,7 +358,7 @@ int fs_stat(const char *pathname, struct fs_stat *buf) {
 int fs_closedir(fdDir *dirp) {
 
     if (dirp == NULL) {
-        perror("Cannot close directory, is null\n");
+        fprintf(stderr, "Cannot close directory, is null\n");
         return 0;
     }
 
@@ -336,15 +375,14 @@ fdDir * fs_opendir(const char *pathname) {
     printf("in opendir\n");
 
     if (res == -1) {
-        fprintf(stderr, "no such file or directory: %s\n", pathname);
         return NULL;
     }
 
-    char* lastElementName = ppinfo->lastElementName ? ppinfo->lastElementName : ".";
+    char* lastElementName = getLastElement(pathname);
     int index = findInDir(ppinfo->parent, lastElementName);
 
     if (index == -1) {
-        fprintf(stderr, "%s not found\n", lastElementName);
+        fprintf(stderr, "fs_opendir: %s not found\n", lastElementName);
         return NULL;
     }
 
@@ -355,8 +393,8 @@ fdDir * fs_opendir(const char *pathname) {
         fprintf(stderr, "%s is not a directory\n", pathname);
         return NULL;
     }
-    
-    fdDir *fd = malloc(sizeof(fdDir));    
+
+    fdDir *fd = malloc(sizeof(fdDir));
 
     fd->d_reclen = NMOverM(entry.size, volumeControlBlock->blockSize);
     fd->dirEntryPosition = index;
@@ -368,13 +406,11 @@ fdDir * fs_opendir(const char *pathname) {
     fd->di->d_reclen = NMOverM(entry.size, volumeControlBlock->blockSize);
     fd->di->fileType = entry.isDirectory;
     strcpy(fd->di->d_name, lastElementName);
-    
+
     free(ppinfo->parent);
     free(ppinfo);
     return fd;
 }
-
-
 
 /*
  * method to help with debugging. prints VCB block
@@ -398,10 +434,10 @@ void printDE(struct DE* directory) {
     printf ("|------- Variable ------|-------- Value --------|\n");
     printf ("| name             | %-26s|\n", directory->name);
     printf ("| size             | %-26i|\n", directory->size);
-    printf ("| location         | %-26li|\n", directory->location);
+    printf ("| location         | %-26i|\n", directory->location);
     printf ("| is directory     | %-26i|\n", directory->isDirectory);
-    printf ("| date created     | %-26i|\n", directory->dateCreated);
-    printf ("| date modified    | %-26i|\n", directory->dataModified);
+    printf ("| date created     | %-26li|\n", directory->dateCreated);
+    printf ("| date modified    | %-26li|\n", directory->dateModified);
     printf ("|-----------------------------------------------|\n");
 }
 
@@ -423,8 +459,6 @@ void printFCB(b_fcb fcb){
     printf ("| currentBlock          | %-22i|\n", fcb.currentBlock);
     printf ("| remainingBytes        | %-22i|\n", fcb.remainingBytes);
     printf ("|-----------------------------------------------|\n");
-    // printf("the buffer:\n%s\n", fcb.buf);
-    // printDE(fcb.fileInfo);
 }
 
 //removes a file
@@ -451,24 +485,6 @@ int fs_delete(char* filename){
     free(ppinfo->parent);
     free(ppinfo);
     return 0;
-}
-
-void clearDir(struct DE* dir) {
-    int location = dir->location;
-    for(int i=2; i < DECOUNT; i++) {
-        if(dir[i].location > 0 && dir[i].isDirectory == 1) {
-            struct DE* currDir = loadDir(dir, i);
-            clearDir(currDir);
-            free(currDir);
-        }
-        if( dir[i].location > 0 && dir[i].isDirectory == 0) {
-            returnFreeBlocks(dir[i].location);
-            dir[i].location = (long)-2;
-        }
-    }
-    returnFreeBlocks(location);
-    int size = NMOverM(dir->size, MINBLOCKSIZE);
-    fileWrite(dir, size, location);
 }
 
 int isEmpty(struct DE* dir) {
@@ -514,8 +530,8 @@ int fs_rmdir(const char *pathname) {
  * @return 0 on success -1 on failure
  */
 int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
-    printf("path: %s\n", pathName);
     if(pathName == NULL || ppinfo == NULL) {
+        fprintf(stderr, "invalid pointers");
         return -1;
     }
     struct DE* currDirectory;
@@ -528,7 +544,6 @@ int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
     char* savePtr = NULL;
     char* path = strdup(pathName);
     char* currToken = strtok_r(path, "/", &savePtr);
-    printf("curr token: %s\n", currToken);
     if( currToken == NULL ) {
         if(pathName[0] == '/') {
             memcpy(ppinfo->parent, currDirectory, 7*512);
@@ -541,19 +556,19 @@ int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
         else {
             free(path);
             free(currDirectory);
+            fprintf(stderr, "invalid path\n");
             return -1;
         }
     }
     struct DE* prevDirectory = malloc(7 * 512);
     memcpy(prevDirectory, currDirectory, 7 * 512);
     int index = findInDir(prevDirectory, currToken);
-    if(index != -1) {
+    if(index != -1 && prevDirectory[index].isDirectory) {
         currDirectory = loadDir(prevDirectory, index);
     }
     char* prevToken = currToken;
     while( (currToken = strtok_r(NULL, "/", &savePtr)) != NULL ) {
-        printf("curr token: %s\n", currToken);
-        memcpy(prevDirectory, currDirectory, 7 * 512);
+        memcpy(prevDirectory, currDirectory, DE_SIZE);
         index = findInDir(prevDirectory, currToken);
         if( index == -1 ) {
             prevToken = currToken;
@@ -565,11 +580,23 @@ int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
                 return 0;
             }
             else {
+                fprintf(stderr, "invalid path\n");
                 return -1;
             }
         }
-        else {
+        else if(prevDirectory[index].isDirectory) {
             currDirectory = loadDir(prevDirectory, index);
+        }
+        else {
+            prevToken = currToken;
+            currToken = strtok_r(NULL, "/", &savePtr);
+            if( currToken == NULL ) {
+                break;
+            }
+            else {
+                fprintf(stderr, "invalid path\n");
+                return -1;
+            }
         }
     }
     memcpy(ppinfo->parent, prevDirectory, 7*512);

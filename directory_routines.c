@@ -1,3 +1,16 @@
+/**************************************************************
+* Class::  CSC-415-03 Spring 2024
+* Name:: Arjun Gill, Mos Kullathon, Vignesh Guruswami, Sid Padmanabhuni
+* Student IDs:: 922170168
+* GitHub-Name:: ArjunS132
+* Group-Name:: Curry OS Connoisseurs
+* Project:: Basic File System
+*
+* File:: directory_routines.c
+*
+* Description:: fs mkdir method
+*
+**************************************************************/
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -27,23 +40,28 @@ int fs_mkdir (const char *pathname, mode_t mode){
 	}
 
 	if( parsePath(pathname, parsepathinfo) == -1 ) {
-        printf("invalid path\n");
+        fprintf(stderr, "invalid path\n");
         return -1;
     }
 	// Read all relevant data from parsepath needed for directory creation
 	parent = parsepathinfo -> parent;
 	directoryName = parsepathinfo->lastElementName;
+	emptyIndex = find_vacant_space ( parent , directoryName);
+	if ( emptyIndex == -1){
+		fprintf(stderr, "error in Find Vacant Space\n");
+		return -1;
+	}
 
 	// Create and link new directory to an empty position in parent array
 	ret = createDirectory(DEFAULTDIRSIZE, parent);
 	if ( ret == -1 ){
-		perror("Create Directory");
+		fprintf(stderr, "error in Create Directory\n");
 		return -1;
 	}
 	memset(newDirectory, 0, MINBLOCKSIZE);
 	ret = fileRead(newDirectory, 1, ret);
 	if ( ret == -1){
-		perror("File Read");
+		fprintf(stderr, "error in File Read\n");
 		return -1;
 	}
 	emptyIndex = find_vacant_space ( parent );

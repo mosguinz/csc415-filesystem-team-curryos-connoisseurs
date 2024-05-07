@@ -1,3 +1,16 @@
+/**************************************************************
+* Class::  CSC-415-03 Spring 2024
+* Name:: Arjun Gill, Mos Kullathon, Vignesh Guruswami, Sid Padmanabhuni
+* Student IDs:: 922170168
+* GitHub-Name:: ArjunS132
+* Group-Name:: Curry OS Connoisseurs
+* Project:: Basic File System
+*
+* File:: fs_control.h
+*
+* Description:: header file for basic file system controls
+*
+**************************************************************/
 #ifndef _FSCTL
 #define _FSCTL
 // Specifications for volume control block
@@ -23,9 +36,9 @@ struct DE
 	int size;	// Size in bytes
 
 	// Metadata
-	int dateCreated;
-	int dataModified;
-	int dateLastAccessed;
+	time_t dateCreated;
+	time_t dateModified;
+	time_t dateLastAccessed;
 
 	int isDirectory; // 1 for directories 0 for non-directories
 	char name[36];

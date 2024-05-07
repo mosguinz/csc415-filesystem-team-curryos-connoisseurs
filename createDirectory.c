@@ -1,7 +1,22 @@
+/**************************************************************
+* Class::  CSC-415-03 Spring 2024
+* Name:: Arjun Gill, Mos Kullathon, Vignesh Guruswami, Sid Padmanabhuni
+* Student IDs:: 922170168
+* GitHub-Name:: ArjunS132
+* Group-Name:: Curry OS Connoisseurs
+* Project:: Basic File System
+*
+* File:: createDirectory.c
+*
+* Description:: basic directory creation method
+*
+**************************************************************/
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <string.h>
+#include <time.h>
 
 #include "fsLow.h"
 #include "mfs.h"
@@ -38,13 +53,19 @@ int createDirectory(int numberOfEntries, struct DE *parent)
 
 	// Request blocks from freespace system
 	blocksRequested = getFreeBlocks(blockCount);
-	printf("Creating Directory at %d, with size %ld bytes\n", blocksRequested, maxEntryCount * sizeof(struct DE));
+	// printf("Creating Directory at %d, with size %ld bytes\n", blocksRequested, maxEntryCount * sizeof(struct DE));
 
 	// Initialize dot and dot dot entries of the new directory
 	buffer[0].location = blocksRequested;
 	buffer[0].size = maxEntryCount * sizeof(struct DE);
 	buffer[0].isDirectory = 1;
 	strncpy(buffer[0].name, ".", 36);
+
+	// Set timestamp fields
+	time_t tm = time(NULL);
+	buffer[0].dateCreated = tm;
+	buffer[0].dateModified = tm;
+	buffer[0].dateLastAccessed = tm;
 
 	// If no parent is passed, initialize root directory @UNSAFE
 	// Cannot handle if root already exists
@@ -60,7 +81,6 @@ int createDirectory(int numberOfEntries, struct DE *parent)
 	}
 	else
 	{
-		printf("Creating a new directory\n");
 		buffer[1].location = parent -> location;
 		buffer[1].size = parent -> size;
 	}
