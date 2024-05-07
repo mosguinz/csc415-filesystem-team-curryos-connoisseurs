@@ -22,6 +22,22 @@ int NMOverM(int n, int m){
     return (n+m-1)/m;
 }
 
+/** Workaround to get the last element in a path. */
+const char* getLastElement(const char* path) {
+    if (strlen(path) == 1 && path[0] == '/') return ".";
+    const char* lastSlash = strrchr(path, '/');
+    if (lastSlash) {
+        // Check path ends with slash
+        if (*(lastSlash + 1) == '\0') {
+            char* p = strdup(path);
+            p[strlen(p) - 1] = '\0';
+            lastSlash = strrchr(p, '/');
+        }
+        return lastSlash + 1;
+    }
+    return path;
+}
+
 /*
  * find the index of the child
  *
@@ -319,7 +335,8 @@ int fs_stat(const char *pathname, struct fs_stat *buf) {
         return -1;
     }
 
-    int index = findInDir(ppinfo->parent, ppinfo->lastElementName);
+    char* lastElementName = getLastElement(pathname);
+    int index = findInDir(ppinfo->parent, lastElementName);
     if (index == -1) {
         fprintf(stderr, "%s not found\n", ppinfo->lastElementName);
         return -1;
@@ -356,11 +373,11 @@ fdDir * fs_opendir(const char *pathname) {
         return NULL;
     }
 
-    char* lastElementName = ppinfo->lastElementName ? ppinfo->lastElementName : ".";
+    char* lastElementName = getLastElement(pathname);
     int index = findInDir(ppinfo->parent, lastElementName);
 
     if (index == -1) {
-        fprintf(stderr, "%s not found\n", lastElementName);
+        fprintf(stderr, "fs_opendir: %s not found\n", lastElementName);
         return NULL;
     }
 
