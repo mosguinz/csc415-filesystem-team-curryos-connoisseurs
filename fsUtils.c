@@ -17,7 +17,6 @@
 #include "mfs.h"
 #include <string.h>
 
-#define DECOUNT (7 * 512 ) / sizeof(struct DE)
 
 int NMOverM(int n, int m){
     return (n+m-1)/m;
@@ -57,10 +56,10 @@ int findInDir(struct DE* searchDirectory, char* name){
 }
 
 /*
- * find the index of an empty DE
+ * find the index of an empty DE.
  *
- * @param directory the DE that is being searched
- * @return the index of the DE or -1 if not found
+ * @param directory the DE that is being searched and name of the potential new file
+ * @return the index of the DE or -1 if not found or if a file/directory with that name already exists TODO: Allow files/directories to have same name?
  */
 int find_vacant_space ( struct DE * directory , char * fileName){
 	for (int i = 0 ; i < (directory->size)/sizeof(struct DE) ; i++ ) {
@@ -86,7 +85,7 @@ int find_vacant_space ( struct DE * directory , char * fileName){
 struct DE* loadDir(struct DE* searchDirectory, int index) {
     int size = NMOverM(DE_SIZE, MINBLOCKSIZE);
     int loc = searchDirectory[index].location;
-    struct DE* directories = (struct DE*)malloc(7 * 512);
+    struct DE* directories = (struct DE*)malloc(DE_SIZE);
     int res = fileRead(directories, size, loc);
     if( res == -1 ) {
         free(directories);
@@ -98,7 +97,7 @@ struct DE* loadDir(struct DE* searchDirectory, int index) {
 //return 1 if directory, 0 otherwise
 int fs_isDir(char * pathname){
     struct PPRETDATA *ppinfo = malloc(sizeof(struct PPRETDATA));
-    ppinfo->parent = malloc(7 * 512);
+    ppinfo->parent = malloc(DE_SIZE);
     int res = parsePath(pathname, ppinfo);
 
     if (res == -1 || ppinfo->lastElementIndex < 0) {
@@ -131,7 +130,7 @@ int fs_isFile(char * filename){
  */
 int fs_mv(const char* startpathname, const char* endpathname) {
     struct PPRETDATA *startppinfo = malloc( sizeof(struct PPRETDATA));
-    startppinfo->parent = malloc( 7 * 512 );
+    startppinfo->parent = malloc( DE_SIZE );
     int startRes = parsePath(startpathname, startppinfo);
     int startIndex = startppinfo->lastElementIndex;
     if( startRes == -1 || startIndex < 2) {
@@ -141,7 +140,7 @@ int fs_mv(const char* startpathname, const char* endpathname) {
     }
 
     struct PPRETDATA *endppinfo = malloc( sizeof(struct PPRETDATA));
-    endppinfo->parent = malloc( 7 * 512 );
+    endppinfo->parent = malloc( DE_SIZE );
     int endRes = parsePath(endpathname, endppinfo);
     int endIndex = endppinfo->lastElementIndex;
     if( endRes == -1 || endIndex == -1 || endppinfo->parent[endIndex].isDirectory == 0) {
@@ -262,7 +261,7 @@ char* cleanPath(char* pathname) {
  */
 int fs_setcwd(char *pathname){
     struct PPRETDATA *ppinfo = malloc( sizeof(struct PPRETDATA));
-    ppinfo->parent = malloc( 7 * 512 );
+    ppinfo->parent = malloc( DE_SIZE );
     int res = parsePath(pathname, ppinfo);
     if( ppinfo->lastElementIndex == -2 ) {
         cwd = loadDir(root, 0);
@@ -282,7 +281,7 @@ int fs_setcwd(char *pathname){
         free(dir);
         return -1;
     }
-    memcpy(cwd, dir, 7 * 512);
+    memcpy(cwd, dir, DE_SIZE);
     free(dir);
     if( pathname[0] == '/' ) {
         cwdPathName = strdup(pathname);
@@ -318,20 +317,19 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp){
         return NULL;
     }
 
-  dirp->di->d_reclen = dirp->d_reclen;
-  dirp->di->fileType = entry.isDirectory;
-  strcpy(dirp->di->d_name, entry.name);
-  dirp->index++;
+    dirp->di->d_reclen = dirp->d_reclen;
+    dirp->di->fileType = entry.isDirectory;
+    strcpy(dirp->di->d_name, entry.name);
+    dirp->index++;
 
-  free(entries);
-  return dirp->di;
+    free(entries);
+    return dirp->di;
 }
 
 int fs_stat(const char *pathname, struct fs_stat *buf) {
     struct PPRETDATA *ppinfo = malloc(sizeof(struct PPRETDATA));
-    ppinfo->parent = malloc(7 * volumeControlBlock->blockSize); // TODO: why not malloc in pp?
+    ppinfo->parent = malloc(DE_SIZE); // TODO: why not malloc in pp?
     int res = parsePath(pathname, ppinfo);
-    printf("in fs_stat\n");
 
     if (res == -1) {
         return -1;
@@ -362,17 +360,14 @@ int fs_closedir(fdDir *dirp) {
         return 0;
     }
 
-    printf("Closing %s\n", dirp->di->d_name);
     free(dirp);
     return 1;
 }
 
 fdDir * fs_opendir(const char *pathname) {
     struct PPRETDATA *ppinfo = malloc(sizeof(struct PPRETDATA));
-    ppinfo->parent = malloc(7 * volumeControlBlock->blockSize); // TODO: why not malloc in pp?
+    ppinfo->parent = malloc(DE_SIZE); // TODO: why not malloc in pp?
     int res = parsePath(pathname, ppinfo);
-
-    printf("in opendir\n");
 
     if (res == -1) {
         return NULL;
@@ -385,8 +380,6 @@ fdDir * fs_opendir(const char *pathname) {
         fprintf(stderr, "fs_opendir: %s not found\n", lastElementName);
         return NULL;
     }
-
-    printf("The file name is %s at index %i\n", lastElementName, index);
 
     struct DE entry = ppinfo->parent[index];
     if (!entry.isDirectory) {
@@ -464,7 +457,7 @@ void printFCB(b_fcb fcb){
 //removes a file
 int fs_delete(char* filename){
     struct PPRETDATA *ppinfo = malloc( sizeof(struct PPRETDATA));
-    ppinfo->parent = malloc( 7 * 512 );
+    ppinfo->parent = malloc( DE_SIZE );
     int res = parsePath(filename, ppinfo);
     int index = ppinfo->lastElementIndex;
     if( res == -1 || index == -1 ) {
@@ -472,16 +465,16 @@ int fs_delete(char* filename){
         free(ppinfo);
         return -1;
     }
-    if( cwd[index].size > 0 ) {
-        if( returnFreeBlocks(cwd[index].location) == -1) {
+    if( ppinfo->parent[index].size > 0 ) {
+        if( returnFreeBlocks(ppinfo->parent[index].location) == -1) {
             free(ppinfo->parent);
             free(ppinfo);
             return -1;
         }
     }
-    cwd[index].location = -2l;
-    int dirSize = NMOverM(cwd[0].size, MINBLOCKSIZE);
-    fileWrite(cwd, dirSize, cwd[0].location);
+    ppinfo->parent[index].location = -2l;
+    int dirSize = NMOverM(ppinfo->parent[0].size, MINBLOCKSIZE);
+    fileWrite(ppinfo->parent, dirSize, ppinfo->parent[0].location);
     free(ppinfo->parent);
     free(ppinfo);
     return 0;
@@ -498,7 +491,7 @@ int isEmpty(struct DE* dir) {
 
 int fs_rmdir(const char *pathname) {
     struct PPRETDATA *ppinfo = malloc( sizeof(struct PPRETDATA));
-    ppinfo->parent = malloc( 7 * 512 );
+    ppinfo->parent = malloc( DE_SIZE );
     int res = parsePath(pathname, ppinfo);
     int index = ppinfo->lastElementIndex;
     if( res == -1 || index <= -1 ) {
@@ -546,7 +539,7 @@ int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
     char* currToken = strtok_r(path, "/", &savePtr);
     if( currToken == NULL ) {
         if(pathName[0] == '/') {
-            memcpy(ppinfo->parent, currDirectory, 7*512);
+            memcpy(ppinfo->parent, currDirectory, DE_SIZE);
             ppinfo->lastElementIndex = -2;
             ppinfo->lastElementName = NULL;
             free(path);
@@ -560,8 +553,8 @@ int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
             return -1;
         }
     }
-    struct DE* prevDirectory = malloc(7 * 512);
-    memcpy(prevDirectory, currDirectory, 7 * 512);
+    struct DE* prevDirectory = malloc(DE_SIZE);
+    memcpy(prevDirectory, currDirectory, DE_SIZE);
     int index = findInDir(prevDirectory, currToken);
     if(index != -1 && prevDirectory[index].isDirectory) {
         currDirectory = loadDir(prevDirectory, index);
@@ -574,7 +567,7 @@ int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
             prevToken = currToken;
             currToken = strtok_r(NULL, "/", &savePtr);
             if( currToken == NULL ) {
-                memcpy(ppinfo->parent, prevDirectory, 7*512);
+                memcpy(ppinfo->parent, prevDirectory, DE_SIZE);
                 ppinfo->lastElementIndex = -1;
                 ppinfo->lastElementName = prevToken;
                 return 0;
@@ -599,7 +592,7 @@ int parsePath(const char* pathName, struct PPRETDATA *ppinfo){
             }
         }
     }
-    memcpy(ppinfo->parent, prevDirectory, 7*512);
+    memcpy(ppinfo->parent, prevDirectory, DE_SIZE);
     ppinfo->lastElementName = prevToken;
     ppinfo->lastElementIndex = index;
     if( currDirectory != cwd && currDirectory != root ) {

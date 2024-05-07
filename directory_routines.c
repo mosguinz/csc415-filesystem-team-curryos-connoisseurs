@@ -21,7 +21,6 @@
 #include "freespace.h"
 #include "fsUtils.h"
 
-#define DEFAULTDIRSIZE 50
 
 int fs_mkdir (const char *pathname, mode_t mode){
 	int ret;				// Used for error handling
@@ -32,7 +31,7 @@ int fs_mkdir (const char *pathname, mode_t mode){
 	struct DE * newDirectory;		// Used for new directory entry
 
 	parsepathinfo = malloc(sizeof(struct PPRETDATA));
-	parsepathinfo->parent = malloc(7*MINBLOCKSIZE);
+	parsepathinfo->parent = malloc(DE_SIZE);
 	newDirectory = malloc(MINBLOCKSIZE);
 	if ( !parsepathinfo || !newDirectory ){
 		perror("malloc");
@@ -64,9 +63,8 @@ int fs_mkdir (const char *pathname, mode_t mode){
 		fprintf(stderr, "error in File Read\n");
 		return -1;
 	}
-	emptyIndex = find_vacant_space ( parent );
 	parent[emptyIndex] = newDirectory[0];
-	strncpy(parent[emptyIndex].name, directoryName, 36);
+	strncpy(parent[emptyIndex].name, directoryName, DE_NAME_SIZE);
 
 	// Write changes back to parent directory to complete linking
     int size = NMOverM(parent->size, MINBLOCKSIZE);
