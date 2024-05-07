@@ -96,6 +96,7 @@ b_io_fd b_open (char * filename, int flags){
     parent = ppinfo->parent;
 
     b_fcb fcb = fcbArray[returnFd];
+    fcb.fileInfo = malloc(sizeof(struct DE));
 
     // // If create flag is set create new file
     // if( parsepathinfo->lastElementIndex < 0 && flags & O_CREAT ) {
@@ -161,20 +162,35 @@ b_io_fd b_open (char * filename, int flags){
 
     // read an existing file
     if( flags & O_RDONLY && ppinfo->lastElementIndex > 0 ) {
+        printf("hit the read case\n");
         file = ppinfo->parent[ppinfo->lastElementIndex];
-        fcb.fileInfo = &file;
+        strncpy(fcb.fileInfo->name, file.name, DE_NAME_SIZE);
+        fcb.fileInfo->size = file.size;
+        fcb.fileInfo->location = file.location;
+        fcb.fileInfo->dateCreated = file.dateCreated;
+        fcb.fileInfo->dateModified = file.dateModified;
+        fcb.fileInfo->dateLastAccessed = file.dateLastAccessed;
+        fcb.fileInfo->isDirectory = file.isDirectory;
         fcb.remainingBytes = file.size;
         fcb.index = 0;
         fcb.fileIndex = ppinfo->lastElementIndex;
         fcb.numBlocks = 0;
         fcb.fileIndex = ppinfo->lastElementIndex;
     }
-    // write an already created filec
+    // write an already created file
     else if( ppinfo->lastElementIndex > 0) {
+        printf("hit the write existing file case\n");
         file = ppinfo->parent[ppinfo->lastElementIndex];
-        fcb.fileInfo = &file;
+        strncpy(fcb.fileInfo->name, file.name, DE_NAME_SIZE);
+        fcb.fileInfo->size = file.size;
+        fcb.fileInfo->location = file.location;
+        fcb.fileInfo->dateCreated = file.dateCreated;
+        fcb.fileInfo->dateModified = file.dateModified;
+        fcb.fileInfo->dateLastAccessed = file.dateLastAccessed;
+        fcb.fileInfo->isDirectory = file.isDirectory;
         fcb.remainingBytes = file.size;
         fcb.index = 0;
+        fcb.currentBlock = file.location;
         fcb.fileIndex = ppinfo->lastElementIndex;
         fcb.numBlocks = NMOverM(file.size, MINBLOCKSIZE);
         fcb.fileIndex = ppinfo->lastElementIndex;
@@ -185,7 +201,7 @@ b_io_fd b_open (char * filename, int flags){
     // write a new file
     else if(flags & O_CREAT) {
         printf("hit the create for touch\n");
-        strncpy(file.name, ppinfo->lastElementName, 28);
+        strncpy(file.name, ppinfo->lastElementName, DE_NAME_SIZE);
         file.size = 0;
         file.location = -1;
         time_t currTime = time(NULL);
@@ -193,7 +209,6 @@ b_io_fd b_open (char * filename, int flags){
         file.dateModified = currTime;
         file.dateLastAccessed = currTime;
         file.isDirectory = 0;
-        fcb.fileInfo = &file;
         fcb.remainingBytes = file.size;
         fcb.index = 0;
         fcb.numBlocks = NMOverM(file.size, MINBLOCKSIZE);
@@ -208,10 +223,18 @@ b_io_fd b_open (char * filename, int flags){
     fcb.buf = malloc(B_CHUNK_SIZE);
     fcb.buflen = B_CHUNK_SIZE;
     fcb.activeFlags = flags;
-    int parentInBlocks = NMOverM(parent[0].size, MINBLOCKSIZE);
-    parent[fcb.fileIndex] = file;
+    strncpy(fcb.fileInfo->name, file.name, DE_NAME_SIZE);
+    fcb.fileInfo->size = file.size;
+    fcb.fileInfo->location = file.location;
+    fcb.fileInfo->dateCreated = file.dateCreated;
+    fcb.fileInfo->dateModified = file.dateModified;
+    fcb.fileInfo->dateLastAccessed = file.dateLastAccessed;
+    fcb.fileInfo->isDirectory = file.isDirectory;
+    int parentInBlocks = NMOverM(DE_SIZE, MINBLOCKSIZE);
+    parent[fcb.fileIndex] = *fcb.fileInfo;
     fileWrite(parent, parentInBlocks, parent[0].location);
     printf("return FD is: %i\n", returnFd);
+    fcbArray[returnFd] = fcb;
     return returnFd;
 }
 
@@ -239,16 +262,19 @@ int b_write (b_io_fd fd, char * buffer, int count) {
 
     // check that fd is between 0 and (MAXFCBS-1)
     if ((fd < 0) || (fd >= MAXFCBS)) {
+        printf("fail 1\n");
         return (-1);                    //invalid file descriptor
     }
 
     // check if there is an active fd
     if( fcbArray[fd].fileInfo == NULL ) {
+        printf("fail 2\n");
         return -1;
     }
 
     // check if there is a valid length
     if( count < 0 ) {
+        printf("fail 3\n");
         return -1;
     }
 
@@ -353,14 +379,17 @@ int b_read (b_io_fd fd, char * buffer, int count) {
 
     // check that fd is between 0 and (MAXFCBS-1)
     if ((fd < 0) || (fd >= MAXFCBS)) {
+        printf("fail 1\n");
         return (-1);                    //invalid file descriptor
     }
     // unused file descriptor
     if( fcbArray[fd].fileInfo == NULL ) {
+        printf("fail 1\n");
         return -1;
     }
 
     if( count < 0 ) {
+        printf("fail 1\n");
         return -1;
     }
 
