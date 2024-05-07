@@ -45,7 +45,7 @@ int findInDir(struct DE* searchDirectory, char* name);
  * @param directory the DE that is being searched
  * @return the index of the DE or -1 if not found
  */
-int find_vacant_space ( struct DE * directory , char * fileName);
+int find_vacant_space ( struct DE * directory );
 
 /*
  * method to help with debugging. prints VCB block
